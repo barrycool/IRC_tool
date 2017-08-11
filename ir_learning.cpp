@@ -475,34 +475,34 @@ uint8_t IR_encode_RC6(uint8_t waveform[255], uint8_t wave_form_cnt, IR_RC6_t &IR
 IR_item_t IR_learning_item;
 void IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
 {
-    qDebug() << "IR_encode,wave_form_cnt= " << wave_form_cnt;
+    //qDebug() << "IR_encode,wave_form_cnt= " << wave_form_cnt;
     IR_learning_item.is_valid = 1;
 
     if(abs(waveform[0] -  SIRCS_START_BIT_HIGH) < 8 && abs(waveform[1] -  SIRCS_START_BIT_LOW) < LEARNING_PRECISION &&
           (wave_form_cnt == 25 || wave_form_cnt == 31 || wave_form_cnt == 39))
     {
-        qDebug() << "IR_TYPE_SIRCS";
+        //qDebug() << "IR_TYPE_SIRCS";
         IR_learning_item.IR_type = IR_TYPE_SIRCS;
         IR_encode_SIRCS(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_SIRCS);
     }
     else if (abs(waveform[0] -  NEC_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  NEC_START_BIT_LOW) < LEARNING_PRECISION &&
              wave_form_cnt == 65)
     {
-        qDebug() << "IR_TYPE_NEC";
+       // qDebug() << "IR_TYPE_NEC";
         IR_learning_item.IR_type = IR_TYPE_NEC;
         IR_encode_NEC(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_NEC);
     }
     else if (abs(waveform[0] -  RC6_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  RC6_START_BIT_LOW) < LEARNING_PRECISION /*&&
              wave_form_cnt == 25*/)
     {
-        qDebug() << "IR_TYPE_RC6";
+        //qDebug() << "IR_TYPE_RC6";
         IR_learning_item.IR_type = IR_TYPE_RC6;
         IR_encode_RC6(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_RC6);
     }
     else if (abs(waveform[0] -  RC5_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  RC5_START_BIT_LOW) < LEARNING_PRECISION /*&&
              wave_form_cnt == 25*/)
     {
-        qDebug() << "IR_TYPE_RC5";
+        //qDebug() << "IR_TYPE_RC5";
         IR_learning_item.IR_type = IR_TYPE_RC5;
         IR_encode_RC5(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_RC5);
 
@@ -510,13 +510,13 @@ void IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
     else if (abs(waveform[0] -  JVC_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  JVC_START_BIT_LOW) < LEARNING_PRECISION /*&&
              wave_form_cnt == 33*/)
     {
-        qDebug() << "IR_TYPE_JVC";
+        //qDebug() << "IR_TYPE_JVC";
         IR_learning_item.IR_type = IR_TYPE_JVC;
         IR_encode_JVC(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_JVC);
     }
     else
     {
-        qDebug() << "IR_TYPE_LEARNING";
+       // qDebug() << "IR_TYPE_LEARNING";
         IR_learning_item.IR_type = IR_TYPE_LEARNING;
         IR_encode_learning(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_learning);
     }
@@ -543,7 +543,7 @@ QString hexByte2String(uint8_t value)
 QString IRLearningItem2String(int nLength)
 {
     //int m_nLength = nLength;
-    qDebug() << "IRLearningItem2String  .IR_type: " <<IR_learning_item.IR_type;
+    //qDebug() << "IRLearningItem2String IR_type: " <<IR_learning_item.IR_type;
 
     //uint8_t m_pData[m_nLength];
     //memcpy(m_pData, pData, m_nLength);
@@ -591,7 +591,7 @@ QString IRLearningItem2String(int nLength)
             break;
     }
     m_result.append(m_tmp);
-    qDebug() << "m_reslut: " <<m_result;
+    //qDebug() << "m_reslut: " <<m_result;
     return m_result;
 }
 
@@ -616,7 +616,7 @@ bool String2IRLearningItem(QString src,IR_item_t *learningItem)
     learningItem->IR_type = irType;
 
     for (int i = 0; i < len; i++) {
-        qDebug("len=%d,dst[%d] = 0x%.2x ",len,i,list1.at(i).toInt(&ok,16));  //for debug
+        //qDebug("len=%d,dst[%d] = 0x%.2x ",len,i,list1.at(i).toInt(&ok,16));  //for debug
     }
 
     switch(irType)

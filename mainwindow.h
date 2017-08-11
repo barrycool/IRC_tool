@@ -155,7 +155,7 @@ private:
     void set_cmd_list_handle();
     QString keyMapDirPath;
 
-    void sendCmd2MCU(char *,uint8_t);
+    void sendCmd2MCU(uint8_t *,uint8_t);
     void sendAck(void *);
     QTimer sendcmd_timer;
     void resendBackupCmd();

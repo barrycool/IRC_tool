@@ -19,7 +19,7 @@ LearningWave::~LearningWave()
 
 void LearningWave::setWaveData(QString butname,uint8_t wavedata[],int len)
 {
-    qDebug() << "setWaveData 000";
+    //qDebug() << "setWaveData 000";
     this->button = butname;
     this->keylen = len;
 
@@ -50,12 +50,12 @@ void LearningWave::analysisWaveData()
 
 void LearningWave::showWave()
 {
-    qDebug() << "analyze the date transfer to wave...";
+    //qDebug() << "analyze the date transfer to wave...";
     QString log = this->button;
-    log.append(":");
+    log.append(":").append(QString::number(keylen));
     for(uint8_t i = 0; i< keylen + 1; i++)
     {
-        log += QString("%1 ").arg(ir_keyvalue[i]);
+        log += QString(" %1").arg(ir_keyvalue[i]);
     }
     output_log(log);
 

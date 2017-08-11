@@ -73,7 +73,7 @@ MainWindow::~MainWindow()
 }
 
 /*--------Lianlian add for cmd send nack and resend--------*/
-void saveCmdAsBackup(char *buf,uint8_t len)
+void saveCmdAsBackup(uint8_t *buf,uint8_t len)
 {
     memcpy(backupCmdBuffer,buf,BUF_LEN);
     backupCmdBufferLen = len;
@@ -84,10 +84,10 @@ void MainWindow::resendBackupCmd()
     resendCount++;
     struct frame_t *frame = (struct frame_t *)backupCmdBuffer;
     frame->seq_num++;
-    sendCmd2MCU((char *)backupCmdBuffer,backupCmdBufferLen);
+    sendCmd2MCU(backupCmdBuffer,backupCmdBufferLen);
 }
 
-void MainWindow::sendCmd2MCU(char *buf,uint8_t len)
+void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
 {
     saveCmdAsBackup(buf,len);
     struct frame_t *frame = (struct frame_t *)buf;
@@ -98,6 +98,17 @@ void MainWindow::sendCmd2MCU(char *buf,uint8_t len)
         output_log("serial port is not open");
         return;  //marked just for test
     }
+
+/*------add for debug----------*/
+        qDebug() << "send packet:";
+        QString log;
+        for(uint8_t j = 0; j< len; j++)
+        {
+            log += QString("%1 ").arg(buf[j]);
+        }
+        qDebug() << log;
+/*------add for debug----------*/
+
     //cmdSemaphore->acquire();
 
     //serial.setBaudRate(QSerialPort::Baud115200);
@@ -109,7 +120,7 @@ void MainWindow::sendCmd2MCU(char *buf,uint8_t len)
    // serial.clearError();
    // serial.clear();
 
-    serial.write(buf, len); //marked just for test
+    serial.write((char *)buf, len); //marked just for test
 
    //qDebug() << "sendCmd2MCU";
 
@@ -152,7 +163,7 @@ void MainWindow::sendAck(void *buffer)
    sendframe->data_len++;
    buf[frame->data_len] = CRC8Software(buf, frame->data_len);
 
-   sendCmd2MCU((char*)buf, frame->data_len);
+   sendCmd2MCU(buf, frame->data_len+1);
 
 }
 
@@ -163,13 +174,6 @@ void MainWindow::serial_receive_data()
     QString log;
 
     buf_len += serial.read((char*)buf + buf_len, BUF_LEN - buf_len);
-    qDebug() << "receive packet:";
-
-    for(uint8_t j = 0; j< buf_len + 1; j++)
-    {
-        log += QString("%1 ").arg(buf[j]);
-    }
-    qDebug() << log;
 
     struct frame_t *frame = (struct frame_t *)buf;
     //struct frame_t *backupframe = (struct frame_t *)backupCmdBuffer;
@@ -206,6 +210,15 @@ void MainWindow::serial_receive_data()
         qDebug() << "CRC32 err";
         return;
     }
+
+    qDebug() << "receive packet:";
+
+    for(uint8_t j = 0; j< buf_len + 1; j++)
+    {
+        log += QString("%1 ").arg(buf[j]);
+    }
+    qDebug() << log;
+
     if(frame->msg == CMD_NACK)
     {
         sendcmd_timer.stop();
@@ -281,7 +294,9 @@ void MainWindow::serial_receive_data()
         uint8_t wavedata[len];
 
         memcpy(wavedata,frame->msg_parameter+1,len);
-
+        QString butname = ui->leButtonText->text();
+/*
+        qDebug() << "receive button : " << butname;
         log = "button key:";
 
         for(uint8_t i = 0; i< len + 1; i++)
@@ -289,13 +304,11 @@ void MainWindow::serial_receive_data()
             log += QString("%1 ").arg(frame->msg_parameter[i]);
         }
 
-        QString butname = ui->leButtonText->text();
+
         //output_log(log);
-        qDebug() << "receive button : " << butname;
+
         qDebug() << log;
-
-        //QString tmpkey = byteArray2String(ir_item.IR_CMD.IR_learn.IR_key);
-
+*/
         ui->leKeyTextEdit->clear();
 
         if(ui->leDebugModeCheckBox->isChecked() && lw != NULL){
@@ -650,7 +663,7 @@ void MainWindow::ir_button_Slot_connect()
 /*---------------------lianlian add for Upgrade----------------*/
 void MainWindow::sendCmdforUpgradeSlot(char *buf,int len)
 {
-    sendCmd2MCU((char*)buf, len);
+    sendCmd2MCU((uint8_t *)buf, len);
 }
 
 void MainWindow::getCurrentMcuVersion()
@@ -666,7 +679,7 @@ void MainWindow::getCurrentMcuVersion()
     version.day = 07;
 
     emit updateVersionSignal(&version);
-    return;
+    return; //just for test
 
     if(!serial.isOpen())
     {
@@ -685,7 +698,7 @@ void MainWindow::getCurrentMcuVersion()
     frame->seq_num = seqnum++;
     buf[frame->data_len] = CRC8Software(buf, frame->data_len);
 
-    sendCmd2MCU((char*)buf, frame->data_len + 1);
+    sendCmd2MCU(buf, frame->data_len + 1);
 }
 /*
 void MainWindow::checkForMcuUpgrade()
@@ -886,7 +899,7 @@ void MainWindow::atIrPanel_slot()
 {
     QPushButton* btn = dynamic_cast<QPushButton*>(sender());
     ui->atButtonText->setText(btn->toolTip());
-    qDebug() << btn->toolTip() << "is clicked in AgingTest ir panel\n";
+    //qDebug() << btn->toolTip() << "is clicked in AgingTest ir panel\n";
     //QMessageBox::information(this,"info","Learning Power button is clicked\n");
 }
 
@@ -1237,12 +1250,12 @@ void MainWindow::atRealTimeSendButton_slot()
 
     buf[frame->data_len] = CRC8Software(buf, frame->data_len);
 
-    qDebug() << "send  button: " << button;
+    //qDebug() << "send  button: " << button;
     QString tmplog = "current send:";
     tmplog.append(button);
     output_log(tmplog);
 
-    sendCmd2MCU((char*)buf, frame->data_len + 1);
+    sendCmd2MCU(buf, frame->data_len + 1);
 
 }
 void MainWindow::atClear_slot()
@@ -1278,7 +1291,7 @@ void MainWindow::set_cmd_list_handle()
 
     buf[frame->data_len] = CRC8Software(buf, frame->data_len);
 
-    sendCmd2MCU((char *)buf,frame->data_len +1);
+    sendCmd2MCU(buf,frame->data_len +1);
 
 
     cmd_index++;
@@ -1306,7 +1319,7 @@ void MainWindow::clear_cmd_list_handle()
 
     buf[frame->data_len] = CRC8Software(buf, frame->data_len);
 
-    sendCmd2MCU((char*)buf, frame->data_len + 1);
+    sendCmd2MCU(buf, frame->data_len + 1);
 }
 
 void MainWindow::atRunButton_slot()
@@ -1348,7 +1361,7 @@ void MainWindow::atStop_slot()
 
     buf[frame->data_len] = CRC8Software(buf, frame->data_len);
 
-    sendCmd2MCU((char*)buf, frame->data_len + 1);
+    sendCmd2MCU(buf, frame->data_len + 1);
 
 }
 
@@ -1403,6 +1416,8 @@ void MainWindow::leRealTimeTestButton_slot()
     }
 
     IR_item_t ir_item;
+    //qDebug() << " sizeof ir_item=  "<<sizeof(IR_item_t);
+    memset(&ir_item,0x0,sizeof(IR_item_t));
     QString btnname;
     QString btnkey;
 
@@ -1460,7 +1475,7 @@ void MainWindow::leRealTimeTestButton_slot()
             break;
     }
 
-    qDebug() << "leRealTimeTestButton_slot:";
+    qDebug() << "leRealTimeTestButton_slot: send button:" << tmpBuf;
     printIrItemInfo(ir_item);
     //serial.setBaudRate(QSerialPort::Baud115200);
     //serial.setParity(QSerialPort::NoParity);
@@ -1486,7 +1501,7 @@ void MainWindow::leRealTimeTestButton_slot()
 
     buf[frame->data_len] = CRC8Software(buf, frame->data_len);
 
-    sendCmd2MCU((char*)buf, frame->data_len + 1);
+    sendCmd2MCU(buf, frame->data_len + 1);
 
 }
 void MainWindow::leStartRecordButton_slot()
@@ -1534,7 +1549,7 @@ void MainWindow::leStartRecordButton_slot()
 
         buf[frame->data_len] = CRC8Software(buf, frame->data_len);
 
-        sendCmd2MCU((char *) buf,frame->data_len + 1);
+        sendCmd2MCU(buf,frame->data_len + 1);
 
         //open learning wave for debug
         if(ui->leDebugModeCheckBox->isChecked() && this->lw == NULL)
@@ -1561,7 +1576,7 @@ void MainWindow::returnfromLearningWave()
 
 void MainWindow::analysisFinshed(QString key)
 {
-    qDebug()<< "MainWindow::analysisFinshed from wave ui";
+    //qDebug()<< "MainWindow::analysisFinshed from wave ui";
     ui->leKeyTextEdit->setText(key);
     ui->leStartRecordBut->setEnabled(true);
 }

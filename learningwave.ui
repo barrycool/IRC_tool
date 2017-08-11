@@ -28,7 +28,7 @@
   </widget>
   <widget class="QTextEdit" name="lwlog">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="geometry">
     <rect>
