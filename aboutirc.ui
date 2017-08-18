@@ -23,9 +23,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>当前IRC 版本为 0.2
-可升级至 1.3版本
-
+    <string>当前IRC 版本为 1.0
 如遇到任何问题,请联系 HSD/SW9/SS5 Lianlian.Huang</string>
    </property>
   </widget>

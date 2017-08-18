@@ -11,6 +11,7 @@
 #define BUF_LEN             255
 #define IR_MAX_LEVEL_NUMBER     10
 #define FAIL_RETRY_TIMES    1
+#define IR_devices_MAX  20
 
 enum IR_type_t {
   IR_TYPE_SIRCS,

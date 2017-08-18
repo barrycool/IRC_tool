@@ -124,11 +124,14 @@
        </property>
       </widget>
       <widget class="QLineEdit" name="atButtonText">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>10</x>
          <y>40</y>
-         <width>61</width>
+         <width>81</width>
          <height>20</height>
         </rect>
        </property>
@@ -136,7 +139,7 @@
       <widget class="QLabel" name="atButtonLable">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>10</x>
          <y>20</y>
          <width>41</width>
          <height>16</height>
@@ -144,19 +147,6 @@
        </property>
        <property name="text">
         <string>Button</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="atRealTimeSendButton">
-       <property name="geometry">
-        <rect>
-         <x>240</x>
-         <y>30</y>
-         <width>91</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>RealTime Send</string>
        </property>
       </widget>
       <widget class="QGroupBox" name="atButtonGroup">
@@ -184,37 +174,11 @@
          <string>Clear</string>
         </property>
        </widget>
-       <widget class="QPushButton" name="atLoadscriptBut">
-        <property name="geometry">
-         <rect>
-          <x>30</x>
-          <y>10</y>
-          <width>71</width>
-          <height>23</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>LoadScript</string>
-        </property>
-       </widget>
-       <widget class="QPushButton" name="atSaveButton">
-        <property name="geometry">
-         <rect>
-          <x>30</x>
-          <y>112</y>
-          <width>71</width>
-          <height>23</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>SaveScript</string>
-        </property>
-       </widget>
        <widget class="QPushButton" name="atAddButton">
         <property name="geometry">
          <rect>
           <x>30</x>
-          <y>40</y>
+          <y>20</y>
           <width>71</width>
           <height>23</height>
          </rect>
@@ -234,7 +198,7 @@
         <property name="geometry">
          <rect>
           <x>30</x>
-          <y>75</y>
+          <y>50</y>
           <width>71</width>
           <height>23</height>
          </rect>
@@ -248,6 +212,19 @@
         </property>
         <property name="text">
          <string>Remove&gt;&gt;</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="atReadPushButton">
+        <property name="geometry">
+         <rect>
+          <x>30</x>
+          <y>120</y>
+          <width>71</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>read</string>
         </property>
        </widget>
       </widget>
@@ -264,6 +241,9 @@
         <string/>
        </property>
        <widget class="QLineEdit" name="atTotalLoopCntText">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="geometry">
          <rect>
           <x>150</x>
@@ -280,6 +260,9 @@
         </property>
        </widget>
        <widget class="QLabel" name="atCurrentLoopCntLable">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="geometry">
          <rect>
           <x>260</x>
@@ -293,6 +276,9 @@
         </property>
        </widget>
        <widget class="QLabel" name="atTotalLoopCntLable">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="geometry">
          <rect>
           <x>120</x>
@@ -319,6 +305,9 @@
         </property>
        </widget>
        <widget class="QRadioButton" name="atSetLoopCntRadioButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="geometry">
          <rect>
           <x>10</x>
@@ -344,6 +333,32 @@
          </rect>
         </property>
        </widget>
+      </widget>
+      <widget class="QPushButton" name="atLoadscriptBut">
+       <property name="geometry">
+        <rect>
+         <x>210</x>
+         <y>40</y>
+         <width>71</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>LoadScript</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="atSaveButton">
+       <property name="geometry">
+        <rect>
+         <x>290</x>
+         <y>40</y>
+         <width>71</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>SaveScript</string>
+       </property>
       </widget>
      </widget>
      <widget class="QGroupBox" name="atChooseDevice">
@@ -415,7 +430,7 @@
        </rect>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="atStackedWidgetPage0">
        <widget class="QGroupBox" name="atRemotePanel">
@@ -1189,6 +1204,22 @@
           <string>Return</string>
          </property>
         </widget>
+        <widget class="QPushButton" name="atLoadKeyMapButton">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="geometry">
+          <rect>
+           <x>60</x>
+           <y>20</y>
+           <width>51</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Load</string>
+         </property>
+        </widget>
        </widget>
       </widget>
       <widget class="QWidget" name="atStackedWidgetPage1">
@@ -1208,23 +1239,23 @@
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>60</y>
+           <y>20</y>
            <width>211</width>
-           <height>361</height>
+           <height>381</height>
           </rect>
          </property>
         </widget>
-        <widget class="QPushButton" name="atLoadKeyMapButton">
+        <widget class="QPushButton" name="atRealTimeSendButton">
          <property name="geometry">
           <rect>
-           <x>80</x>
-           <y>20</y>
-           <width>61</width>
-           <height>23</height>
+           <x>130</x>
+           <y>410</y>
+           <width>91</width>
+           <height>21</height>
           </rect>
          </property>
          <property name="text">
-          <string>Load</string>
+          <string>RealTime Send</string>
          </property>
         </widget>
        </widget>
@@ -1291,7 +1322,7 @@
       </widget>
       <widget class="QLineEdit" name="leKeyTextEdit">
        <property name="enabled">
-        <bool>true</bool>
+        <bool>false</bool>
        </property>
        <property name="geometry">
         <rect>
@@ -1302,7 +1333,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>00-11-22-3a-4b-c5-6d-7e-8f-f9</string>
+        <string/>
        </property>
       </widget>
       <widget class="QListWidget" name="leKeymaplistWidget">
@@ -1365,39 +1396,39 @@
        <property name="geometry">
         <rect>
          <x>290</x>
-         <y>110</y>
+         <y>170</y>
          <width>91</width>
          <height>23</height>
         </rect>
        </property>
        <property name="text">
-        <string>AddToList</string>
+        <string>Add &lt;&lt;</string>
        </property>
       </widget>
       <widget class="QPushButton" name="leRealTimeTestBut">
        <property name="geometry">
         <rect>
          <x>290</x>
-         <y>260</y>
+         <y>100</y>
          <width>91</width>
-         <height>23</height>
+         <height>31</height>
         </rect>
        </property>
        <property name="text">
-        <string>RealTimeTest</string>
+        <string>RealTimeSend</string>
        </property>
       </widget>
       <widget class="QPushButton" name="leRemoveFromListBut">
        <property name="geometry">
         <rect>
          <x>290</x>
-         <y>160</y>
+         <y>220</y>
          <width>91</width>
          <height>23</height>
         </rect>
        </property>
        <property name="text">
-        <string>RemoveFromLit</string>
+        <string>Remove &gt;&gt;</string>
        </property>
       </widget>
       <widget class="QPushButton" name="leSaveKeymapBut">
@@ -1443,7 +1474,7 @@
        <property name="geometry">
         <rect>
          <x>290</x>
-         <y>210</y>
+         <y>300</y>
          <width>91</width>
          <height>23</height>
         </rect>
@@ -2402,18 +2433,9 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
      <height>23</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuIR_Customer">
-    <property name="title">
-     <string>IR_Customer</string>
-    </property>
-    <addaction name="actionSony"/>
-    <addaction name="actionSamsung"/>
-    <addaction name="actionLG"/>
-    <addaction name="actionLoadKeyMap"/>
-   </widget>
    <widget class="QMenu" name="menuSetting">
     <property name="title">
-     <string>Setting</string>
+     <string>PortSetting</string>
     </property>
     <addaction name="actionOpenUart"/>
     <addaction name="actionFresh"/>
@@ -2424,6 +2446,7 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
      <string>Help</string>
     </property>
     <addaction name="actionAbout_IRC"/>
+    <addaction name="actionUser_Manual"/>
    </widget>
    <widget class="QMenu" name="menuOperation">
     <property name="title">
@@ -2434,7 +2457,6 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
     <addaction name="actionAgingTest"/>
     <addaction name="actionIRWave"/>
    </widget>
-   <addaction name="menuIR_Customer"/>
    <addaction name="menuSetting"/>
    <addaction name="menuOperation"/>
    <addaction name="menuHelp"/>
@@ -2456,6 +2478,7 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
    <addaction name="actionAgingTest"/>
    <addaction name="separator"/>
    <addaction name="actionUpgrade"/>
+   <addaction name="actionUser_Manual"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionSony">
@@ -2552,6 +2575,15 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
    </property>
    <property name="text">
     <string>IRWave</string>
+   </property>
+  </action>
+  <action name="actionUser_Manual">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/new/icon/resource-icon/timg.jpg</normaloff>:/new/icon/resource-icon/timg.jpg</iconset>
+   </property>
+   <property name="text">
+    <string>User Manual</string>
    </property>
   </action>
  </widget>

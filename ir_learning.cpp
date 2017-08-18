@@ -478,8 +478,8 @@ void IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
     //qDebug() << "IR_encode,wave_form_cnt= " << wave_form_cnt;
     IR_learning_item.is_valid = 1;
 
-    if(abs(waveform[0] -  SIRCS_START_BIT_HIGH) < 8 && abs(waveform[1] -  SIRCS_START_BIT_LOW) < LEARNING_PRECISION &&
-          (wave_form_cnt == 25 || wave_form_cnt == 31 || wave_form_cnt == 39))
+    if(abs(waveform[0] -  SIRCS_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  SIRCS_START_BIT_LOW) < LEARNING_PRECISION &&
+          (wave_form_cnt == 25 || wave_form_cnt == 31 || wave_form_cnt == 41))
     {
         //qDebug() << "IR_TYPE_SIRCS";
         IR_learning_item.IR_type = IR_TYPE_SIRCS;
@@ -577,6 +577,10 @@ QString IRLearningItem2String(int nLength)
             m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_JVC.IR_command));
             break;
         case IR_TYPE_LEARNING:
+            //qDebug() << "IR_learning.bit_data=" << IR_learning_item.IR_CMD.IR_learning.bit_data;
+            //qDebug("IR_learning.bit_data=0x%x",IR_learning_item.IR_CMD.IR_learning.bit_data);
+            //qDebug() << "SIR_learning.bit_data=" << QString::number(IR_learning_item.IR_CMD.IR_learning.bit_data,16);
+
             m_tmp.append(QString::number(IR_learning_item.IR_CMD.IR_learning.bit_data,16)).append("-");
             m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_learning.bit_number)).append("-");
             m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_learning.header_high)).append("-");
@@ -618,6 +622,10 @@ bool String2IRLearningItem(QString src,IR_item_t *learningItem)
     for (int i = 0; i < len; i++) {
         //qDebug("len=%d,dst[%d] = 0x%.2x ",len,i,list1.at(i).toInt(&ok,16));  //for debug
     }
+
+    bool ok1;
+    //qDebug() << "SIR_learning.bit_data=" << list1.at(1);
+    //qDebug() << "IR_learning.bit_data=" << list1.at(1).toULongLong(&ok1,16);
 
     switch(irType)
     {
@@ -682,7 +690,8 @@ bool String2IRLearningItem(QString src,IR_item_t *learningItem)
         case IR_TYPE_LEARNING:
             if(len == 10)
             {
-                learningItem->IR_CMD.IR_learning.bit_data = list1.at(1).toInt(&ok,16);
+                uint64_t tmp = list1.at(1).toULongLong(&ok,16);
+                learningItem->IR_CMD.IR_learning.bit_data = list1.at(1).toULongLong(&ok,16);
                 learningItem->IR_CMD.IR_learning.bit_number = list1.at(2).toInt(&ok,16);
                 learningItem->IR_CMD.IR_learning.header_high = list1.at(3).toInt(&ok,16);
                 learningItem->IR_CMD.IR_learning.header_low= list1.at(4).toInt(&ok,16);

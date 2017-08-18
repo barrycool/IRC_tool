@@ -93,7 +93,10 @@ void UpgradeDialog::checkForMcuUpgrade()
        || (versionYear == currentMcuVersionYear && versionMonth == currentMcuVersionMonth && versionDay > currentMcuVersionDay))
     {
         //QMessageBox::information(this,"Upgrade available","Upgrade for MCU is available");
-        QMessageBox::StandardButton reply = QMessageBox::question(this, "Upgrade available", "Do you want to upgrade for MCU?", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+        QString str = "The latest version of MCU is: ";
+        str.append(tmp).append("\n");
+        str.append("Do you want to upgrade for MCU?");
+        QMessageBox::StandardButton reply = QMessageBox::question(this, "Upgrade available", str, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
         if(reply == QMessageBox::Yes)
         {
              //ui->UpgradeSubWindow->showMaximized();

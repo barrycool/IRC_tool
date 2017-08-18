@@ -5,7 +5,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     MainWindow w;
-    QString title = "IRC_TOOL ";
+    QString title = "Smart IR ";
     title.append(VERSION);
     w.setWindowTitle(title);
     w.setWindowIcon(QIcon(":/new/icon/resource-icon/logo.png"));

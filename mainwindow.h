@@ -111,8 +111,9 @@ private slots:
     void atClear_slot();
     void atRunButton_slot();
     void atStop_slot();
-    void atLoadKeyMapButton_slot();
+    //void atLoadKeyMapButton_slot();
     void atRealTimeSendButton_slot();
+    void atReadPushButton_slot();
      /*---------lianlian add for MCU upgrade---------------*/
     //void ReadMcuVersionSlot();
     void sendcmdTimeout();
@@ -120,6 +121,8 @@ private slots:
     void sendCmdforUpgradeSlot(char *,int);
 
     void on_actionIRWave_triggered();
+
+    void on_actionUser_Manual_triggered();
 
 signals:
     //void sendsignal();
@@ -137,7 +140,6 @@ private:
     ComPort_Setting *fport;
     bool isAutotestState;
     //bool isLearingkeyState;
-    void ir_button_List_init();
     void ir_button_Slot_connect();
     QList <IR_item_t> IR_items;
     QList <IR_map_t> IR_maps;
@@ -156,28 +158,23 @@ private:
     QString keyMapDirPath;
 
     void sendCmd2MCU(uint8_t *,uint8_t);
-    void sendAck(void *);
+    void sendAck(uint8_t seq_num, uint8_t msg_id);
     QTimer sendcmd_timer;
     void resendBackupCmd();
     //QSemaphore *cmdSemaphore;
 
     /*---------lianlian add for MCU upgrade---------------*/
-
-    //void getCurrentMcuVersion();
-    //void startUpgrade();
-    //void sendUpgradePacket();
-    //int currentMcuVersionYear;
-    //int currentMcuVersionMonth;
-    //int currentMcuVersionDay;
-    //QList<char *> upgradePacketList;
-    //QLabel *upWebLinklable;
-    //void startUpgradeThread();
-    //void handleResults(const QString);
-
     LearningWave *lw;
     UpgradeDialog *fupdiaglog;
+
     void printIrItemInfo(IR_item_t ir_item);
 
+    void set_IR_protocol();
+    void loadInsetIrMapTable();
+    void set_IR_device(int index);
+    void set_IR_command_list();
+    void atAddItem2ScriptListWidget(int ir_type,QString button_name,int delaytime);
+    void atClearScriptWidget();
 };
 
 #endif // MAINWINDOW_H
