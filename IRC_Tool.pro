@@ -50,11 +50,9 @@ HEADERS += \
 FORMS += \
         mainwindow.ui \
     aboutirc.ui \
-    aboutirc.ui \
     comport_setting.ui \
     learningwave.ui \
     upgradedialog.ui
 
 RESOURCES += \
     resource.qrc \
-    resource.qrc

@@ -405,7 +405,9 @@ void MainWindow::printIrItemInfo(IR_item_t ir_item)
             break;
         case IR_TYPE_NEC:
             str.append(ir_item.IR_CMD.IR_NEC.name);
+            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_NEC.IR_header_high,16));
             str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_NEC.IR_address,16));
+            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_NEC.IR_address_ext,16));
             str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_NEC.IR_command,16));
             break;
         case IR_TYPE_RC6:
@@ -427,12 +429,13 @@ void MainWindow::printIrItemInfo(IR_item_t ir_item)
         case IR_TYPE_LEARNING:
             str.append(ir_item.IR_CMD.IR_learning.name);
             str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.bit_data,16));
+            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.bit_data_ext_16,16));
             str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.bit_number,16));
             str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.header_high,16));
             str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.header_low,16));
-            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.unused,16));
-            for(int i=0;i<4;i++){
-                str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.bit_counter_set[i],16));
+
+            for(int i=0;i < IR_LEARNING_PLUSE_CNT;i++){
+                str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.pluse_width[i],16));
             }
             break;
         default:

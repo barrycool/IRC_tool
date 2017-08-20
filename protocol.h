@@ -40,7 +40,9 @@ struct IR_SIRCS_t {
 };
 
 struct IR_NEC_t {
+  uint8_t IR_header_high;
   uint8_t IR_address;
+  uint8_t IR_address_ext;
   uint8_t IR_command;
   char name[16];
 };
@@ -64,16 +66,18 @@ struct IR_JVC_t {
   char name[16];
 };
 
+#define IR_LEARNING_PLUSE_CNT 3
 struct IR_learning_t{
   uint64_t bit_data;
+  uint16_t bit_data_ext_16;
+
   uint8_t bit_number;
 
   uint8_t header_high;
   uint8_t header_low;
 
-  uint8_t unused;
+  uint8_t pluse_width[IR_LEARNING_PLUSE_CNT];
 
-  uint8_t bit_counter_set[4];
   char name[16];
 };
 
