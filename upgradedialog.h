@@ -13,6 +13,10 @@
 #include <QSemaphore>
 #include <crc32.h>
 #include <QDesktopServices>
+#include "upgrade.h"
+//#include <QtNetwork/QHostInfo>
+//#include <QtNetwork/QNetworkAccessManager>
+
 
 namespace Ui {
 class UpgradeDialog;
@@ -29,6 +33,7 @@ public:
 signals:
     getVersionSignal();
     sendCmdSignal(char* , int);
+    signalDownloadFinished();
 
 private slots:
     void checkForMcuUpgrade();
@@ -38,6 +43,10 @@ private slots:
     void finishReceivedSlot();
     void cmdFailSlot();
     void openUrl_slot(QString);
+    //void onLookupHost(QHostInfo host);
+    //void httpDowload();
+    //void httpDowloadFinished();
+    void analysisVersionfromBin();
 
 private:
     Ui::UpgradeDialog *ui;
@@ -48,11 +57,19 @@ private:
     QList<char *> upgradePacketList;
     QList<uint8_t *> upgradeCmdList;
     QSemaphore *cmdSemaphore;
-    void upDownloadButton_slot();
+    void upUpgradeButton_slot();
+    void upCancelButton_slot();
     void addUpgradeStartPacket();
+    void addUpgradeFinishPacket();
     void addUpgradeBinPacket();
     void getUpgradeCmdList();
     void startUpgrade();
+    void doDownload(QUrl fileURL,QFile *dstFile);
+    //QNetworkReply *avatorReply;
+    //QNetworkAccessManager *avatorManager;
+
+    QString dstBinFilePath;
+    int binfileLen;
 
 };
 

@@ -703,7 +703,9 @@ QString IRLearningItem2String(int nLength)
             m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_SIRCS.IR_command));
             break;
         case IR_TYPE_NEC:
+            m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_NEC.IR_header_high)).append("-");
             m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_NEC.IR_address)).append("-");
+            m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_NEC.IR_address_ext)).append("-");
             m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_NEC.IR_command));
             break;
         case IR_TYPE_RC6:
@@ -785,10 +787,12 @@ bool String2IRLearningItem(QString src,IR_item_t *learningItem)
             }
             break;
         case IR_TYPE_NEC:
-            if(len == 3)
+            if(len == 5)
             {
-                learningItem->IR_CMD.IR_NEC.IR_address = list1.at(1).toInt(&ok,16);
-                learningItem->IR_CMD.IR_NEC.IR_command = list1.at(2).toInt(&ok,16);
+                learningItem->IR_CMD.IR_NEC.IR_header_high = list1.at(1).toInt(&ok,16);
+                learningItem->IR_CMD.IR_NEC.IR_address = list1.at(2).toInt(&ok,16);
+                learningItem->IR_CMD.IR_NEC.IR_address_ext = list1.at(3).toInt(&ok,16);
+                learningItem->IR_CMD.IR_NEC.IR_command = list1.at(4).toInt(&ok,16);
             }
             else
             {

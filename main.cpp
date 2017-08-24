@@ -9,6 +9,8 @@ int main(int argc, char *argv[])
     title.append(VERSION);
     w.setWindowTitle(title);
     w.setWindowIcon(QIcon(":/new/icon/resource-icon/logo.png"));
+    //w.setSizePolicy(QSizePolicy::Fixed);
+    w.setFixedSize(678,530);
     w.show();
 
     return a.exec();

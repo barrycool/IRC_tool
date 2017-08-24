@@ -8,6 +8,7 @@
 #include <learningwave.h>
 #include <upgradedialog.h>
 #include <ir_learning.h>
+#include "upgrade.h"
 
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
@@ -29,6 +30,7 @@
 #include <QDesktopServices>
 //#include <QSemaphore>
 #include <QThread>
+#include <QSettings>
 
 namespace Ui {
 class MainWindow;
@@ -81,6 +83,7 @@ private slots:
 
     void on_actionAgingTest_triggered();
     void serial_receive_data();
+    void portChanged(int);
     /*-------lianlian add for Upgrade----------------*/
     //void upDownloadButton_slot();
     void upCancelButton_slot();
@@ -98,9 +101,11 @@ private slots:
     void leRealTimeTestButton_slot();
     void returnfromLearningWave();
     void analysisFinshed(QString);
+    void leSetIRDevice(int index);
     //void leReadyReadSlot();
     /*---------lianlian add for AgingTest---------------*/
     void atCustomizeKeyListWidgetItemClicked_slot(QListWidgetItem* );
+    void atScriptlistWidgetClicked_slot(QListWidgetItem* item);
     void atIrPanel_slot();
     void atCustomizeButton_slot();
     void atReturnButton_slot();
@@ -109,8 +114,8 @@ private slots:
     void atLoadscriptBut_slot();
     void atSaveButton_slot();
     void atClear_slot();
-    void atRunButton_slot();
-    void atStop_slot();
+    void atDownloadButton_slot();
+    void atStartButton_slot();
     //void atLoadKeyMapButton_slot();
     void atRealTimeSendButton_slot();
     void atReadPushButton_slot();
@@ -175,6 +180,9 @@ private:
     void set_IR_command_list();
     void atAddItem2ScriptListWidget(int ir_type,QString button_name,int delaytime);
     void atClearScriptWidget();
+
+    QSettings *settings;
+
 };
 
 #endif // MAINWINDOW_H

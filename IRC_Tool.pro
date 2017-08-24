@@ -35,7 +35,9 @@ SOURCES += \
     protocol.cpp \
     learningwave.cpp \
     upgradedialog.cpp \
-    ir_learning.cpp
+    ir_learning.cpp \
+    upgrade.cpp \
+    httpthread.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -45,7 +47,9 @@ HEADERS += \
     protocol.h \
     learningwave.h \
     upgradedialog.h \
-    ir_learning.h
+    ir_learning.h \
+    upgrade.h \
+    httpthread.h
 
 FORMS += \
         mainwindow.ui \
@@ -56,3 +60,4 @@ FORMS += \
 
 RESOURCES += \
     resource.qrc \
+    resource.qrc

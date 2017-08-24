@@ -1,22 +1,18 @@
 #ifndef UPGRADE_H
 #define UPGRADE_H
 
-#include <QDialog>
+#include <QSerialPort>
+#include <QProgressBar>
 
-namespace Ui {
-class Upgrade;
-}
 
-class Upgrade : public QDialog
+class upgrade
 {
-    Q_OBJECT
-
 public:
-    explicit Upgrade(QWidget *parent = 0);
-    ~Upgrade();
-
-private:
-    Ui::Upgrade *ui;
+    upgrade();
 };
+
+uint8_t upgrade_init(QSerialPort &port, uint8_t seq_num, QProgressBar *progressBar);
+void upgrade_send_packet(QSerialPort &port, uint8_t seq_num, QProgressBar *progressBar);
+void upgrade_cancel(QProgressBar *progressBar);
 
 #endif // UPGRADE_H

@@ -18,17 +18,18 @@
         <file>resource-icon/16917.png</file>
         <file>resource-icon/16928.png</file>
         <file>resource-icon/29202.png</file>
-        <file>resource-icon/37184.gif</file>
         <file>resource-icon/61127.png</file>
         <file>resource-icon/95045.png</file>
         <file>resource-icon/120361.png</file>
         <file>resource-icon/120436.png</file>
+        <file>resource-icon/120483.png</file>
         <file>resource-icon/120512.png</file>
         <file>resource-icon/121875.png</file>
         <file>resource-icon/142140.png</file>
         <file>resource-icon/157129.png</file>
         <file>resource-icon/316270.png</file>
         <file>resource-icon/accepted_48.png</file>
+        <file>resource-icon/add (1).png</file>
         <file>resource-icon/add.png</file>
         <file>resource-icon/appointment-new-icon.png</file>
         <file>resource-icon/ball_green.png</file>
@@ -50,40 +51,28 @@
         <file>resource-icon/exclamation-circle.png</file>
         <file>resource-icon/exclamation-circle-frame.png</file>
         <file>resource-icon/fast_forward.png</file>
-        <file>resource-icon/ff.png</file>
-        <file>resource-icon/forward.png</file>
-        <file>resource-icon/fr.png</file>
         <file>resource-icon/green.png</file>
         <file>resource-icon/green_button.png</file>
         <file>resource-icon/green-button.png</file>
         <file>resource-icon/heart.png</file>
+        <file>resource-icon/help.png</file>
         <file>resource-icon/learning.png</file>
-        <file>resource-icon/left123.png</file>
         <file>resource-icon/lock.png</file>
         <file>resource-icon/logo.png</file>
         <file>resource-icon/monitor.png</file>
-        <file>resource-icon/next.png</file>
+        <file>resource-icon/next48png.png</file>
         <file>resource-icon/orange.png</file>
         <file>resource-icon/orange_button.png</file>
         <file>resource-icon/oscilloscope.png</file>
-        <file>resource-icon/pause.png</file>
-        <file>resource-icon/pause1.png</file>
-        <file>resource-icon/pause9.png</file>
-        <file>resource-icon/pause17.png</file>
-        <file>resource-icon/pause39.png</file>
-        <file>resource-icon/play1.png</file>
-        <file>resource-icon/play46.png</file>
-        <file>resource-icon/play86.png</file>
-        <file>resource-icon/prev.png</file>
+        <file>resource-icon/pause48.png</file>
+        <file>resource-icon/play48.png</file>
+        <file>resource-icon/previous.png</file>
         <file>resource-icon/red-button.png</file>
         <file>resource-icon/refresh (1).png</file>
         <file>resource-icon/refresh.png</file>
         <file>resource-icon/reload_24x28.png</file>
-        <file>resource-icon/remote.png</file>
         <file>resource-icon/remote_control.png</file>
-        <file>resource-icon/rewind (1).png</file>
         <file>resource-icon/rewind.png</file>
-        <file>resource-icon/right109.png</file>
         <file>resource-icon/save (1).png</file>
         <file>resource-icon/save.png</file>
         <file>resource-icon/search.png</file>
@@ -94,9 +83,8 @@
         <file>resource-icon/sign-up-icon.png</file>
         <file>resource-icon/star_empty.png</file>
         <file>resource-icon/star_full.png</file>
-        <file>resource-icon/start256.png</file>
         <file>resource-icon/stop1.png</file>
-        <file>resource-icon/stop22.png</file>
+        <file>resource-icon/stop23.png</file>
         <file>resource-icon/system_upgrade.png</file>
         <file>resource-icon/tasks.png</file>
         <file>resource-icon/timg.jpg</file>

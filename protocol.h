@@ -133,7 +133,7 @@ enum msg_t {
     MCU_VERSION,        //0x08 mcu返回mcu的版本信息,eg:20170417
     UPGRADE_START,      //0x09
     SEND_UPGRADE_PACKET,//0x0a 向MCU发送升级包
-    UPGRADE_FISHED,     //0x0b
+    UPGRADE_FINISH,     //0x0b
     PAUSE_SEND,         //0x0c
     START_SEND,         //0x0d
     STOP_LEARNING,      //0x0e

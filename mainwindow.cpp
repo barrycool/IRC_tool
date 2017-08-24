@@ -12,6 +12,9 @@ uint8_t backupCmdBuffer[BUF_LEN];
 int backupCmdBufferLen = 0;
 int resendCount = 1;
 /*--------Lianlian add for cmd send nack and resend  end--------*/
+static bool isInit = 0;
+QStringList IR_protocols;// = {"sony"};
+QStringList IR_SIRCS_devices[IR_devices_MAX] = {{"BDP0", "soundbar0"}};
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -21,8 +24,14 @@ MainWindow::MainWindow(QWidget *parent) :
     //getCurrentMcuVersion();
     portBox = new QComboBox;
     ui->mainToolBar->insertWidget(ui->actionOpenUart,portBox);
+    settings = new QSettings("Mediatek","IRC_Tool");
+
+    ui->actionPort_Setting->setDisabled(true);//disable uart setting for now
+    connect(portBox,SIGNAL(currentIndexChanged(int)), this, SLOT(portChanged(int)));
+
     on_actionFresh_triggered();
-    //portSetting.port_name = portBox->currentText();
+
+
     this->lw = NULL;
     /*
     QDir *dir = new QDir(QDir::currentPath());
@@ -46,7 +55,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->actionIRWave->setDisabled(true);
     //ui->leStackedWidget->setCurrentIndex(0);
     ui->atStackedWidget->setCurrentIndex(1);
-    ui->upProgressBar->hide();
 
     QString baudrate = DEFAULT_BAUDRATE;
     portSetting.baudRate = baudrate.toInt();
@@ -62,7 +70,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QWidget *wContainer = new QWidget(ui->atScriptlistWidget);
     QHBoxLayout *hLayout = new QHBoxLayout(wContainer);
 
-    QLabel *isLearningKey = new QLabel(tr("O/L"));
+    QLabel *isLearningKey = new QLabel(tr("Proto")); //"O/L"
     QLabel *keyName = new QLabel(tr("keyName"));
     QLabel *time = new QLabel(tr("time"));
 
@@ -72,8 +80,8 @@ MainWindow::MainWindow(QWidget *parent) :
     hLayout->addStretch(1);
     hLayout->addWidget(time);
     hLayout->setContentsMargins(5,0,0,5);//关键代码，如果没有很可能显示不出来
-    isLearningKey->setFixedWidth(30);
-    keyName->setFixedWidth(103);
+    isLearningKey->setFixedWidth(35);
+    keyName->setFixedWidth(105);
     time->setFixedWidth(50);
 
     QListWidgetItem * scriptItem = new QListWidgetItem(ui->atScriptlistWidget);
@@ -87,13 +95,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(&serial, SIGNAL(readyRead()), this, SLOT(serial_receive_data()));
     sendcmd_timer.setSingleShot(true);
     //cmdSemaphore = new QSemaphore(1);
-/*
-    upWebLinklable = new QLabel( "<a href = http://www.mediatek.inc >www.mediatek.inc</a>", this );
-    QRect r1(460, 220, 180, 100);
-    upWebLinklable->setGeometry(r1);
-    upWebLinklable->setParent(ui->UpgradeSubWindow);
-    QObject::connect(upWebLinklable,SIGNAL(linkActivated(QString)),this,SLOT(openUrl_slot(QString)));
-*/
+    isInit = 1;
 }
 
 MainWindow::~MainWindow()
@@ -166,7 +168,7 @@ void MainWindow::sendcmdTimeout()
 
     if(resendCount > FAIL_RETRY_TIMES)
     {
-        qDebug() << "retry for 5 times still fail,quit!";
+        qDebug("retry for %d times still fail,quit!",FAIL_RETRY_TIMES);
         resendCount = 0;
         emit cmdFailSignal();
         return;
@@ -279,18 +281,23 @@ void MainWindow::serial_receive_data()
         {
             emit receiveAckSignal();
         }
+        else if (frame->msg_parameter[0] == UPGRADE_FINISH)
+        {
+            emit receiveFinshSignal();
+        }
         else if (frame->msg_parameter[0] == REAL_TIME_SEND)
         {
             qDebug() << "REAL_TIME_SEND success";
         }
         else if (frame->msg_parameter[0] == START_SEND)
         {
-            ui->atRunButton->setText("Pause");
+            ui->atStartButton->setText("Pause");
         }
         else if (frame->msg_parameter[0] == PAUSE_SEND)
         {
-            ui->atRunButton->setText("Run");
+           ui->atStartButton->setText("Start");
         }
+
     }
     else if (frame->msg == SET_CMD_LIST)
     {
@@ -382,12 +389,6 @@ void MainWindow::serial_receive_data()
         }
 
     }
-    else if (frame->msg == UPGRADE_FISHED)
-    {
-        sendAck(frame->seq_num, frame->msg);
-        emit receiveFinshSignal();
-
-    }
     buf_len = 0;
 }
 
@@ -445,7 +446,13 @@ void MainWindow::printIrItemInfo(IR_item_t ir_item)
     output_log(str);
 }
 /*--------Lianlian add for cmd send nack and resend --- end--------*/
+void MainWindow::portChanged(int index)
+{
+    qDebug()<<"portChanged to: "<< index;
+    settings->setValue("SeialPortName",portBox->currentText());
+    on_actionOpenUart_triggered();
 
+}
 void MainWindow::on_actionAbout_IRC_triggered()
 {
     AboutIrc *diaglog = new AboutIrc;
@@ -486,6 +493,8 @@ void MainWindow::on_actionOpenUart_triggered()
             //serial.setPortName(portBox->currentText());
             serial.setBaudRate(QSerialPort::Baud115200);
             serial.setFlowControl(QSerialPort::NoFlowControl);
+
+            settings->setValue("SeialPortName",portBox->currentText());
         }
         else
             QMessageBox::information(this,"Warning","Open " + serial.portName()+ "fail:" + serial.error());
@@ -498,61 +507,68 @@ void MainWindow::on_actionFresh_triggered()
     portBox->clear();
     QList<QSerialPortInfo> portList = QSerialPortInfo::availablePorts();
     qDebug() << "how many ports:" << portList.size();
-    int availabelPortCnt = 0;
+    //int availabelPortCnt = 0;
+    bool exsit = 0;
     if(portList.size() > 0)
     {
+        //1:add the serial portBox
         QSerialPort serialtmp;
+        QString oldPortName = settings->value("SeialPortName","COM1").toString();
         foreach(const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
         {
-
             serialtmp.setPort(info);
-            if(serialtmp.open(QIODevice::ReadWrite))
+            portBox->addItem(serialtmp.portName());
+            if(info.portName() == oldPortName)
             {
-                portBox->addItem(serialtmp.portName());
-                availabelPortCnt++;
-                //qDebug << serial.portName();
-                serialtmp.close();
+                exsit = 1;
             }
-        }
-        if(availabelPortCnt <=0 ){
-             ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
-             QMessageBox::information(this,"Warning","No available ComPort!");
 
+        }
+
+        //2.set current idex as last setting
+        if(exsit)
+        {
+            portBox->setCurrentText(oldPortName);
         }
         else
         {
             portBox->setCurrentIndex(0);
-            foreach(const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
-            {
-                if(info.portName() == portBox->currentText())
-                {
-                    serial.setPort(info);
-                    break;
-                }
-            }
-            serial.setPortName(portBox->currentText());
-            portSetting.port_name = portBox->currentText();
-            if(serial.open(QIODevice::ReadWrite))
-            {
-                serial.setBaudRate(QSerialPort::Baud115200);
-                serial.setFlowControl(QSerialPort::NoFlowControl);
-                ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_green.png"));
+        }
 
-            }
-            else
+        foreach(const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
+        {
+            if(info.portName() == portBox->currentText())
             {
-                qDebug() << "open fail";
-                ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+                serial.setPort(info);
+                break;
             }
+        }
+        serial.setPortName(portBox->currentText());
+        portSetting.port_name = portBox->currentText();
+        //3.open the serial port
+        if(serial.open(QIODevice::ReadWrite))
+        {
+            serial.setBaudRate(QSerialPort::Baud115200);
+            serial.setFlowControl(QSerialPort::NoFlowControl);
+            ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_green.png"));
 
+            settings->setValue("SeialPortName",portBox->currentText());
 
+        }
+        else
+        {
+            qDebug() << "open fail";
+            ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
         }
 
     }
     else
     {
         ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
-        QMessageBox::information(this,"Warning","No available ComPort!");
+        output_log("No available ComPort!");
+        if(isInit)
+            QMessageBox::information(this,"Warning","No available ComPort!");
+
     }
 
     //portBox->setCurrentText(this->portSetting.port_name);
@@ -568,10 +584,29 @@ void MainWindow::on_actionUpgrade_triggered()
     fupdiaglog->show();//非模态
     //diaglog->exec();//模态
 }
+void MainWindow::leSetIRDevice(int index)
+{
+    ui->leDeviceText->clear();
+    foreach(const QString device, IR_SIRCS_devices[index])
+    {
+        ui->leDeviceText->addItem(device);
+    }
 
+}
 void MainWindow::on_actionLearningKey_triggered()
 {
+    disconnect(ui->leCustomerText, SIGNAL(currentIndexChanged(int)), this, SLOT(leSetIRDevice(int)));
+    ui->leCustomerText->clear();
+    foreach(const QString procotol, IR_protocols)
+    {
+        qDebug() << procotol;
+        ui->leCustomerText->addItem(procotol);
+    }
+    connect(ui->leCustomerText, SIGNAL(currentIndexChanged(int)), this, SLOT(leSetIRDevice(int)));
+
     //QMessageBox::information(this,"Guide","Please choose a button from a panel first,then press the button on remote control,wait until key value shows on the edidtbox");
+
+    leSetIRDevice(0);
 
     ui->learningKeyGroup->setDisabled(false);
     ui->learningKeyGroup->show();
@@ -610,7 +645,8 @@ void MainWindow::on_actionAgingTest_triggered()
         //ui->atDeviceCombox->setCurrentText(oldDev);
         ui->AgingTestSubWindow->showMaximized();
         ui->actionIRWave->setDisabled(true);
-        loadInsetIrMapTable();
+
+        //loadInsetIrMapTable();
     //}
 
 }
@@ -623,7 +659,7 @@ void MainWindow::ir_button_Slot_connect()
     //QObject::connect(ui->upCheckUpdateButton,SIGNAL(clicked()),this,SLOT(checkForMcuUpgrade()));
 
 /*---------------------lianlian add for LearingKey----------------*/
-    QObject::connect(ui->leCustomizeButton,SIGNAL(clicked()),this,SLOT(leCustomizeButton_slot()));
+    //QObject::connect(ui->leCustomizeButton,SIGNAL(clicked()),this,SLOT(leCustomizeButton_slot()));
     //QObject::connect(ui->leReturnButton,SIGNAL(clicked()),this,SLOT(leReturnButton_slot()));
 
     QObject::connect(ui->lePower,SIGNAL(clicked()),this,SLOT(leIrPanel_slot()));
@@ -670,6 +706,11 @@ void MainWindow::ir_button_Slot_connect()
     QObject::connect(ui->leOption,SIGNAL(clicked()),this,SLOT(leIrPanel_slot()));
     QObject::connect(ui->leSubtitle,SIGNAL(clicked()),this,SLOT(leIrPanel_slot()));
     QObject::connect(ui->leRecall,SIGNAL(clicked()),this,SLOT(leIrPanel_slot()));
+    QObject::connect(ui->leRepeat,SIGNAL(clicked()),this,SLOT(leIrPanel_slot()));
+    QObject::connect(ui->leNetflix,SIGNAL(clicked()),this,SLOT(leIrPanel_slot()));
+    QObject::connect(ui->leYouTube,SIGNAL(clicked()),this,SLOT(leIrPanel_slot()));
+    QObject::connect(ui->leTopMenu,SIGNAL(clicked()),this,SLOT(leIrPanel_slot()));
+    QObject::connect(ui->lePopMenu,SIGNAL(clicked()),this,SLOT(leIrPanel_slot()));
 
     QObject::connect(ui->leStartRecordBut,SIGNAL(clicked()),this,SLOT(leStartRecordButton_slot()));
     QObject::connect(ui->leAddToListButton,SIGNAL(clicked()),this,SLOT(leAddToListButton_slot()));
@@ -735,13 +776,14 @@ void MainWindow::ir_button_Slot_connect()
         QObject::connect(ui->atSaveButton,SIGNAL(clicked()),this,SLOT(atSaveButton_slot()));
         QObject::connect(ui->atClear,SIGNAL(clicked()),this,SLOT(atClear_slot()));
         QObject::connect(ui->atRealTimeSendButton,SIGNAL(clicked()),this,SLOT(atRealTimeSendButton_slot()));
-        QObject::connect(ui->atRunButton,SIGNAL(clicked()),this,SLOT(atRunButton_slot()));
-        QObject::connect(ui->atStop,SIGNAL(clicked()),this,SLOT(atStop_slot()));
+        QObject::connect(ui->atDownloadButton,SIGNAL(clicked()),this,SLOT(atDownloadButton_slot()));
+        QObject::connect(ui->atStartButton,SIGNAL(clicked()),this,SLOT(atStartButton_slot()));
         //QObject::connect(ui->atLoadKeyMapButton,SIGNAL(clicked()),this,SLOT(atLoadKeyMapButton_slot()));
         QObject::connect(ui->atReadPushButton,SIGNAL(clicked()),this,SLOT(atReadPushButton_slot()));
 
 
         QObject::connect(ui->atCustomizeKeyListWidget,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(atCustomizeKeyListWidgetItemClicked_slot(QListWidgetItem*)));
+        QObject::connect(ui->atScriptlistWidget,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(atScriptlistWidgetClicked_slot(QListWidgetItem*)));
 
 }
 
@@ -793,14 +835,16 @@ void MainWindow::upCancelButton_slot()
 
 /*---------------------lianlian add for AgingTest----------------*/
 //Load Key Map
-QStringList IR_protocols;// = {"sony"};
-QStringList IR_SIRCS_devices[IR_devices_MAX] = {{"BDP0", "soundbar0"}};
+
 int totalIrProtocols = 0;
 
 void MainWindow::loadInsetIrMapTable()
 {
     int irProtocolsCount = 0;
     bool irFinishMap = false;
+    IR_protocols.clear();
+    for(int i = 0 ; i < IR_devices_MAX ; i++)
+    IR_SIRCS_devices[i].clear();
 /*
     QString appPath = qApp->applicationDirPath();
     QString insetIrMapTablePath = appPath.append("\\KeyMapConfig");
@@ -829,7 +873,7 @@ void MainWindow::loadInsetIrMapTable()
 
         qDebug() << fileNames.at(index);
         QString filename = fileNames.at(index);
-        QStringList customDevice = filename.split(QRegExp("[_.]"), QString::SkipEmptyParts);
+        QStringList customDevice = filename.split(QRegExp("[%.]"), QString::SkipEmptyParts);
         /*QStringList fileNamePure = filename.split(".");
         QString filenamePure0 = fileNamePure.at(0);
         QStringList customDevice = filenamePure0.split("_");*/
@@ -891,7 +935,9 @@ void MainWindow::loadInsetIrMapTable()
 
     //add all protocols to atCustomerCombox
     set_IR_protocol();
-    set_IR_device(0);
+
+    int oldCustomerIdx = settings->value("CustomerIdx",0).toInt();
+    set_IR_device(oldCustomerIdx);
 }
 
 void MainWindow::set_IR_protocol()
@@ -905,9 +951,12 @@ void MainWindow::set_IR_protocol()
         qDebug() << procotol;
         ui->atCustomerCombox->addItem(procotol);
     }
+
     connect(ui->atCustomerCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_device);
     connect(ui->atDeviceCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_command_list);
 
+    int oldIdx = settings->value("CustomerIdx",0).toInt();
+    ui->atCustomerCombox->setCurrentIndex(oldIdx);
 }
 
 void MainWindow::set_IR_device(int index)
@@ -922,6 +971,9 @@ void MainWindow::set_IR_device(int index)
         ui->atDeviceCombox->addItem(device);
     }
 
+    int oldIdx = settings->value("DeviceIdx",0).toInt();
+    ui->atDeviceCombox->setCurrentIndex(oldIdx);
+
     set_IR_command_list();
     connect(ui->atDeviceCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_command_list);
 }
@@ -930,7 +982,7 @@ void MainWindow::set_IR_command_list()
 {
     qDebug() << "set_IR_command_list";
     ui->atCustomizeKeyListWidget->clear();
-    QString fileName=ui->atCustomerCombox->currentText()+"_"+ui->atDeviceCombox->currentText()+".ini";
+    QString fileName=ui->atCustomerCombox->currentText()+"%"+ui->atDeviceCombox->currentText()+".ini";
     QString appPath = qApp->applicationDirPath();
     QString insetIrMapTablePath = appPath.append("\\KeyMapConfig\\");
     QString filePath = insetIrMapTablePath+fileName;
@@ -951,6 +1003,8 @@ void MainWindow::set_IR_command_list()
     qDebug() << "device name" << line;
     //should add NEC
 
+    IR_maps.clear();
+
     while(!in.atEnd()){
         line = in.readLine();
         if(line.contains(','))
@@ -963,6 +1017,9 @@ void MainWindow::set_IR_command_list()
     file->close();
     delete file;
     file = NULL;
+
+    settings->setValue("CustomerIdx",ui->atCustomerCombox->currentIndex());
+    settings->setValue("DeviceIdx",ui->atDeviceCombox->currentIndex());
 }
 
 void MainWindow::atIrPanel_slot()
@@ -970,23 +1027,21 @@ void MainWindow::atIrPanel_slot()
     QPushButton* btn = dynamic_cast<QPushButton*>(sender());
     ui->atButtonText->setText(btn->toolTip());
     //qDebug() << btn->toolTip() << "is clicked in AgingTest ir panel\n";
-    //QMessageBox::information(this,"info","Learning Power button is clicked\n");
 }
 
 void MainWindow::setToKeyListWidget(QString line)
 {
-    QString isLearingKey = NULL;
+    QString IR_type = NULL;
     QString buttonName = NULL;
     QString str = NULL;
 
     QStringList list1 = line.split(',');
-    isLearingKey = list1.at(0);
+    IR_type = list1.at(0);
     //QByteArray ba = list1.at(1).toLatin1();
     buttonName = list1.at(1);//ba.data();
-    //qDebug() << "loadkeymap:line " << line;
     qDebug() << "loadkeymap:buttonName " << buttonName;
 
-    str = isLearingKey.append("    ").append(buttonName/*QString(QLatin1String(buttonName))*/);
+    str = IR_type.append("    ").append(buttonName/*QString(QLatin1String(buttonName))*/);
     QListWidgetItem *item = new QListWidgetItem(str,ui->atCustomizeKeyListWidget);
     ui->atCustomizeKeyListWidget->addItem(item);
 }
@@ -1066,9 +1121,9 @@ void MainWindow::atLoadKeyMapButton_slot()
 void MainWindow::atReadPushButton_slot()
 {
     qDebug() << "atReadPushButton_slot:read current cmd list from mcu\n";
-
     atClearScriptWidget();
     IR_items.clear();
+
 
     uint8_t buf[BUF_LEN];
     memset(buf,0x0,BUF_LEN);
@@ -1087,12 +1142,45 @@ void MainWindow::atReadPushButton_slot()
 void MainWindow::atCustomizeKeyListWidgetItemClicked_slot(QListWidgetItem* item)
 {
     QString str = item->text();
-    //int isLearingKey = 0;
-    //char * buttonName = "";
     QStringList list1 = str.split(QRegularExpression("\\W+"), QString::SkipEmptyParts);
-    //isLearingKey = list1.at(0).toInt();
     //QByteArray ba = list1.at(1).toLatin1();
     QString buttonName = list1.at(1);//ba.data();
+    ui->atButtonText->setText(/*QString(QLatin1String(*/buttonName);
+}
+void MainWindow::atScriptlistWidgetClicked_slot(QListWidgetItem* item)
+{
+    int currentRow = ui->atScriptlistWidget->row(item);
+    //qDebug() << "atScriptlistWidgetClicked_slot: currentRow="<< currentRow;
+    if(currentRow == 0)
+    {
+        return;
+    }
+    char tmpBuf[MAX_NAME_LEN];
+
+    switch(IR_items.at(currentRow-1).IR_type)
+    {
+        case IR_TYPE_SIRCS:
+            memcpy(tmpBuf,IR_items.at(currentRow-1).IR_CMD.IR_SIRCS.name,MAX_NAME_LEN);
+            break;
+        case IR_TYPE_NEC:
+            memcpy(tmpBuf,IR_items.at(currentRow-1).IR_CMD.IR_NEC.name,MAX_NAME_LEN);
+            break;
+        case IR_TYPE_RC6:
+            memcpy(tmpBuf,IR_items.at(currentRow-1).IR_CMD.IR_RC6.name,MAX_NAME_LEN);
+            break;
+        case IR_TYPE_RC5:
+            memcpy(tmpBuf,IR_items.at(currentRow-1).IR_CMD.IR_RC5.name,MAX_NAME_LEN);
+            break;
+        case IR_TYPE_JVC:
+            memcpy(tmpBuf,IR_items.at(currentRow-1).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
+            break;
+        case IR_TYPE_LEARNING:
+            memcpy(tmpBuf,IR_items.at(currentRow-1).IR_CMD.IR_learning.name,MAX_NAME_LEN);
+            break;
+        default:
+            break;
+    }
+    QString buttonName = QString(QLatin1String(tmpBuf));
     ui->atButtonText->setText(/*QString(QLatin1String(*/buttonName);
 }
 void MainWindow::atCustomizeButton_slot()
@@ -1112,14 +1200,31 @@ void MainWindow::atAddItem2ScriptListWidget(int ir_type,QString button_name,int 
     QString islearning;
     QString sdelaytime;
 
-    if (ir_type == IR_TYPE_LEARNING)
+    if (ir_type == IR_TYPE_SIRCS)
     {
-        islearning = "L";
+        islearning = "Sony";
+    }
+    else if(ir_type == IR_TYPE_NEC)
+    {
+        islearning = "NEC";
+    }
+    else if(ir_type == IR_TYPE_RC5)
+    {
+        islearning = "RC5";
+    }
+    else if(ir_type == IR_TYPE_RC6)
+    {
+        islearning = "RC6";
+    }
+    else if(ir_type == IR_TYPE_JVC)
+    {
+        islearning = "JVC";
     }
     else
     {
-        islearning = "O";
+        islearning = "L";
     }
+
     cmd_item = button_name;
     sdelaytime = QString("%1").arg(delaytime);
     /*if (IR_item.is_random)
@@ -1140,8 +1245,8 @@ void MainWindow::atAddItem2ScriptListWidget(int ir_type,QString button_name,int 
     hLayout->addStretch(1);
     hLayout->addWidget(time);
     hLayout->setContentsMargins(5,0,0,5);//关键代码，如果没有很可能显示不出来
-    isLearningKey->setFixedWidth(30);
-    keyName->setFixedWidth(103);
+    isLearningKey->setFixedWidth(35);
+    keyName->setFixedWidth(105);
     time->setFixedWidth(50);
 
     QListWidgetItem * scriptItem = new QListWidgetItem(ui->atScriptlistWidget);
@@ -1218,14 +1323,14 @@ void MainWindow::atAddButton_slot()
 
 void MainWindow::atRemoveButton_slot()
 {
-    if (ui->atScriptlistWidget->count())
+    if (ui->atScriptlistWidget->count() >1)
     {
         int index = ui->atScriptlistWidget->currentRow();
 
-        if (index >= 0)
+        if (index >= 1)
         {
             ui->atScriptlistWidget->removeItemWidget(ui->atScriptlistWidget->takeItem(index));
-            IR_items.removeAt(index);
+            IR_items.removeAt(index-1);
         }
     }
     else
@@ -1235,17 +1340,20 @@ void MainWindow::atRemoveButton_slot()
 }
 void MainWindow::atClearScriptWidget()
 {
-    if (ui->atScriptlistWidget->count()>1)
+    //qDebug() << "before cleared:atScriptlistWidget->count() = "<<ui->atScriptlistWidget->count();
+    int count = ui->atScriptlistWidget->count();
+    if (count > 1)
     {
         //int index = ui->atScriptlistWidget->currentRow();
 
-        for (int i = 1;i < ui->atScriptlistWidget->count();i++)
+        for (int i = 1;i < count;i++)
         {
-            ui->atScriptlistWidget->removeItemWidget(ui->atScriptlistWidget->takeItem(i));
+             //qDebug() << "remove index :" << i;
+            ui->atScriptlistWidget->removeItemWidget(ui->atScriptlistWidget->takeItem(1));
 
         }
     }
-    IR_items.clear();
+    //IR_items.clear();
 }
 void MainWindow::atLoadscriptBut_slot()
 {
@@ -1461,9 +1569,9 @@ void MainWindow::atClear_slot()
 {
     int counter =  ui->atScriptlistWidget->count();
     //this->setWindowTitle(VERSION);
-    for(int index = counter; index >= 0 ; index--)
+    for(int index = counter; index >= 1 ; index--)
     {
-        IR_items.removeAt(index);
+        IR_items.removeAt(index-1);
         QListWidgetItem *item = ui->atScriptlistWidget->takeItem(index+1);
         //ui->atScriptlistWidget->removeItemWidget(item);
         delete item;
@@ -1475,25 +1583,12 @@ void MainWindow::set_cmd_list_handle()
     if (cmd_index >= IR_items.size())
     {
         qDebug() << "cmd list send finished";
+        output_log("cmd list send finished");
         //set_cmd_list_timer.stop();
-        qDebug() << "send START_SEND to mcu\n";
-
-        output_log("start the loop test.");
-        uint8_t buf[BUF_LEN];
-        memset(buf,0x0,BUF_LEN);
-        struct frame_t *frame = (struct frame_t *)buf;
-
-        frame->data_len = sizeof(struct frame_t);
-        frame->header = FRAME_HEADER;
-        frame->msg = START_SEND;//CLEAR_CMD_LIST;
-        frame->seq_num = seqnum++;
-
-        buf[frame->data_len] = CRC8Software(buf, frame->data_len);
-
-        sendCmd2MCU(buf, frame->data_len + 1);
         return;
     }
-    qDebug() << "set_cmd_list_handle:send SET_CMD_LIST to mcu,cmd_index = " <<cmd_index <<"\n";
+    qDebug() << "send SET_CMD_LIST to mcu,cmd_index = " <<cmd_index;
+
     uint8_t buf[BUF_LEN];
     memset(buf,0x0,BUF_LEN);
     uint8_t para_index = 0;
@@ -1507,7 +1602,7 @@ void MainWindow::set_cmd_list_handle()
 
     frame->msg_parameter[para_index++] = cmd_index;
 
-    qDebug() << "IR_items.size = " <<IR_items.size();
+    //qDebug() << "IR_items.size = " <<IR_items.size();
 
     IR_item_t ir_item = IR_items.at(cmd_index);
 
@@ -1541,53 +1636,55 @@ void MainWindow::clear_cmd_list_handle()
     sendCmd2MCU(buf, frame->data_len + 1);
 }
 
-void MainWindow::atRunButton_slot()
+void MainWindow::atDownloadButton_slot()
 {
-    //qDebug() << "start to run timer\n";
-    if(ui->atRunButton->text() == "Run")
-    {
-        output_log("start aging test...");
+    qDebug() << "Download cmd list to mcu\n";
+    output_log("start Download cmd list to mcu...");
 
-        if (!serial.isOpen())
-        {
-            QMessageBox::critical(this, tr("send data error"), "please open serial port first");
-            return;
-        }
-
-        clear_cmd_list_handle();
-    /*
-        if(ui->atSetLoopCntRadioButton->isChecked()){
-            currentLoopIndex = 0;
-            totalLoopCnt = ui->atTotalLoopCntText->text().toInt();
-        }
-    */
-        //set_cmd_list_timer.stop();
-        cmd_index = 0;
-        //set_cmd_list_timer.start(50);
-        //set_cmd_list_handle();
-    }
-    else if(ui->atRunButton->text() == "Pause")
+    if (!serial.isOpen())
     {
-        atStop_slot();
+        QMessageBox::critical(this, tr("send data error"), "please open serial port first");
+        return;
     }
+
+    clear_cmd_list_handle();
+/*
+    if(ui->atSetLoopCntRadioButton->isChecked()){
+        currentLoopIndex = 0;
+        totalLoopCnt = ui->atTotalLoopCntText->text().toInt();
+    }
+*/
+    //set_cmd_list_timer.stop();
+    cmd_index = 0;
+    //set_cmd_list_timer.start(50);
+    //set_cmd_list_handle();
 }
 
-void MainWindow::atStop_slot()
+void MainWindow::atStartButton_slot()
 {
-    //set_cmd_list_timer.stop();
-    qDebug() << "atStop_slot:send PAUSE_SEND to mcu\n";
-    output_log("pause the loop test.");
     uint8_t buf[BUF_LEN];
     memset(buf,0x0,BUF_LEN);
     struct frame_t *frame = (struct frame_t *)buf;
-
     frame->data_len = sizeof(struct frame_t);
     frame->header = FRAME_HEADER;
-    frame->msg = PAUSE_SEND;//CLEAR_CMD_LIST;
     frame->seq_num = seqnum++;
 
-    buf[frame->data_len] = CRC8Software(buf, frame->data_len);
+    if(ui->atStartButton->text() == "Start")
+    {
+        qDebug() << "send START_SEND";
+        output_log("start the loop test.");
+        frame->msg = START_SEND;//CLEAR_CMD_LIST;
+        ui->atStartButton->setText("Pause");
+    }
+    else if(ui->atStartButton->text() == "Pause")
+    {
+        //set_cmd_list_timer.stop();
+        qDebug() << "send PAUSE_SEND";
+        output_log("pause the loop test.");
+        frame->msg = PAUSE_SEND;//CLEAR_CMD_LIST;
 
+    }
+    buf[frame->data_len] = CRC8Software(buf, frame->data_len);
     sendCmd2MCU(buf, frame->data_len + 1);
 
 }
@@ -1839,6 +1936,7 @@ void MainWindow::leAddToListButton_slot()
 
     QListWidgetItem *item = new QListWidgetItem(str,ui->leKeymaplistWidget);
     ui->leKeymaplistWidget->addItem(item);
+    ui->leKeymaplistWidget->setCurrentItem(item); //make KeyMapList always focus on the last item when a new item is added
 
 /* step2 : add to learningkey_maps QList */
     learningkey_maps.append(learningkey);
@@ -1874,13 +1972,13 @@ void MainWindow::leRemoveFromListButton_slot()
 }
 void MainWindow::leSaveKeymapButton_slot()
 {
-    if(ui->leCustomerText->text().isEmpty())
+    if(ui->leCustomerText->currentText().isEmpty())
     {
         QMessageBox::information(this,"warning","Cusomer cannot be empty,Please input a Customer name");
         ui->leCustomerText->setFocus();
         return;
     }
-    else if(ui->leDeviceText->text().isEmpty())
+    else if(ui->leDeviceText->currentText().isEmpty())
     {
         QMessageBox::information(this,"warning","Device cannot be empty,Please input a Device name");
         ui->leDeviceText->setFocus();
@@ -1896,7 +1994,7 @@ void MainWindow::leSaveKeymapButton_slot()
 
     QDir *dir = new QDir(keyMapDirPath);
     dir->setCurrent(keyMapDirPath);
-    QString filename = ui->leCustomerText->text().append("_").append(ui->leDeviceText->text())./*append("_byLearning").*/append(".ini");
+    QString filename = ui->leCustomerText->currentText().append("%").append(ui->leDeviceText->currentText())./*append("_byLearning").*/append(".ini");
     QFile *keymapfile = new QFile;
     //QFile *tempFile = new QFile;
     keymapfile->setFileName(filename);
@@ -1925,8 +2023,8 @@ void MainWindow::leSaveKeymapButton_slot()
             return ;
         }
         //QTextStream out(keymapfile);
-        out << ui->leCustomerText->text() << "\n";
-        out << ui->leDeviceText->text() << "\n";
+        out << ui->leCustomerText->currentText() << "\n";
+        out << ui->leDeviceText->currentText() << "\n";
     }
     qDebug() << "save:leKeymaplistWidget total count is " << ui->leKeymaplistWidget->count();
     for(int i = 0;i < ui->leKeymaplistWidget->count();i++)
@@ -1956,7 +2054,7 @@ void MainWindow::leSaveKeymapButton_slot()
     //QString oldCus = ui->atCustomerCombox->currentText(); //backup last selection
    // QString oldDev = ui->atDeviceCombox->currentText();//backup
 
-    //loadInsetIrMapTable();
+    loadInsetIrMapTable();
     //ui->atCustomerCombox->setCurrentText(oldCus);
     //ui->atDeviceCombox->setCurrentText(oldDev);
 
