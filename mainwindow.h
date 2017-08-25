@@ -31,6 +31,7 @@
 //#include <QSemaphore>
 #include <QThread>
 #include <QSettings>
+#include <windows.h>
 
 namespace Ui {
 class MainWindow;
@@ -129,6 +130,11 @@ private slots:
 
     void on_actionUser_Manual_triggered();
 
+    void on_actionLog_triggered();
+    void logSaveAsButton_slot();
+    void logSaveButton_slot();
+    void logClearButton_slot();
+
 signals:
     //void sendsignal();
     void send2learningwave();
@@ -154,7 +160,7 @@ private:
     void saveToIrMaps(QString);
     QTimer set_cmd_list_timer;
     int cmd_index;
-    void output_log(QString);
+    void output_log(QString,int);
     //int currentLoopIndex;
     //int totalLoopCnt;
 

@@ -2408,6 +2408,60 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
       </widget>
      </widget>
     </widget>
+    <widget class="QWidget" name="logSubWindow">
+     <property name="windowTitle">
+      <string>子窗口</string>
+     </property>
+     <widget class="QTextEdit" name="logTextEdit">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>38</y>
+        <width>661</width>
+        <height>421</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="logSaveButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>51</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Save</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="logClearButton">
+      <property name="geometry">
+       <rect>
+        <x>200</x>
+        <y>10</y>
+        <width>51</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Clear</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="logSaveasButton">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>10</y>
+        <width>71</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Save as..</string>
+      </property>
+     </widget>
+    </widget>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
@@ -2441,6 +2495,9 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
     <addaction name="actionUpgrade"/>
     <addaction name="actionLearningKey"/>
     <addaction name="actionAgingTest"/>
+    <addaction name="actionLog"/>
+    <addaction name="actionSave_log"/>
+    <addaction name="actionSaveasLog"/>
    </widget>
    <addaction name="menuSetting"/>
    <addaction name="menuOperation"/>
@@ -2455,12 +2512,14 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
    </attribute>
    <addaction name="actionOpenUart"/>
    <addaction name="separator"/>
+   <addaction name="actionAgingTest"/>
    <addaction name="actionLearningKey"/>
    <addaction name="separator"/>
-   <addaction name="actionAgingTest"/>
-   <addaction name="separator"/>
    <addaction name="actionUpgrade"/>
+   <addaction name="separator"/>
    <addaction name="actionUser_Manual"/>
+   <addaction name="separator"/>
+   <addaction name="actionLog"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionSony">
@@ -2566,6 +2625,25 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
    </property>
    <property name="text">
     <string>User Manual</string>
+   </property>
+  </action>
+  <action name="actionLog">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/new/icon/resource-icon/10527.png</normaloff>:/new/icon/resource-icon/10527.png</iconset>
+   </property>
+   <property name="text">
+    <string>Log</string>
+   </property>
+  </action>
+  <action name="actionSave_log">
+   <property name="text">
+    <string>Save log</string>
+   </property>
+  </action>
+  <action name="actionSaveasLog">
+   <property name="text">
+    <string>Save log as..</string>
    </property>
   </action>
  </widget>
