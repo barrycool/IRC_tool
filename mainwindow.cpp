@@ -123,8 +123,8 @@ void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
     }
 
 /*------add for debug----------*/
-        qDebug() << "send packet:";
-        QString log;
+        QString log = "send packet:";
+
         for(uint8_t j = 0; j< len; j++)
         {
             log += QString("%1 ").arg(buf[j]);
@@ -146,9 +146,15 @@ void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
 
     serial.write((char *)buf, len); //marked just for test
 
-    if(frame->msg != CMD_ACK)
+    if(frame->msg != CMD_ACK && frame->msg != UPGRADE_FINISH)
     {
         sendcmd_timer.start(2000);
+    }
+    if(frame->msg == UPGRADE_FINISH)
+    {
+        serial.close();
+        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+
     }
 
 }
@@ -158,7 +164,7 @@ void MainWindow::sendcmdTimeout()
 
     if(resendCount > FAIL_RETRY_TIMES)
     {
-        qDebug("retry for %d times still fail,quit!",FAIL_RETRY_TIMES);
+        qDebug("retry for %d times still Timeout,quit!",FAIL_RETRY_TIMES);
 
         logstr = "cmd send fail";
         output_log(logstr,1);
@@ -168,7 +174,7 @@ void MainWindow::sendcmdTimeout()
         return;
     }
 
-    //qDebug() <<"cmd was handle tiemout,resend :" << resendCount;
+    qDebug() <<"CMD Timeout,resend :" << resendCount;
     logstr = "cmd was handle tiemout,resend ";
     logstr += QString("%1 ").arg(resendCount);
     output_log(logstr,1);
@@ -257,7 +263,8 @@ void MainWindow::serial_receive_data()
 
         if(resendCount >= FAIL_RETRY_TIMES)
         {
-            qDebug() << "retry for 5 times still fail,quit!";
+            //qDebug() << "NAK :cmd not handled correctly";
+            qDebug("retry for %d times still NACK,quit!",FAIL_RETRY_TIMES);
             output_log("NAK :cmd not handled correctly",1);
             resendCount = 0;
             emit cmdFailSignal();
@@ -280,13 +287,10 @@ void MainWindow::serial_receive_data()
         {
             set_cmd_list_handle();
         }
-        else if (frame->msg_parameter[0] == UPGRADE_START ||frame->msg_parameter[0] == SEND_UPGRADE_PACKET )
+        else if (frame->msg_parameter[0] == UPGRADE_START ||frame->msg_parameter[0] == SEND_UPGRADE_PACKET)
         {
-            emit receiveAckSignal();
-        }
-        else if (frame->msg_parameter[0] == UPGRADE_FINISH)
-        {
-            emit receiveFinshSignal();
+            //qDebug() << "receive ack of " << frame->msg_parameter[0];
+            emit receiveAckSignal(frame->msg_parameter[0]);
         }
         else if (frame->msg_parameter[0] == REAL_TIME_SEND)
         {
@@ -829,9 +833,10 @@ void MainWindow::ir_button_Slot_connect()
 }
 
 /*---------------------lianlian add for Upgrade----------------*/
-void MainWindow::sendCmdforUpgradeSlot(char *buf,int len)
+void MainWindow::sendCmdforUpgradeSlot(uint8_t *buf,int len)
 {
-    sendCmd2MCU((uint8_t *)buf, len);
+    //qDebug() << "sendCmdforUpgradeSlot";
+    sendCmd2MCU(buf, len);
 }
 
 void MainWindow::getCurrentMcuVersion()
@@ -1314,7 +1319,8 @@ void MainWindow::atAddItem2ScriptListWidget(int ir_type,QString button_name,int 
 
     QLabel *isLearningKey = new QLabel(islearning);
     QLabel *keyName = new QLabel(cmd_item);
-    QLabel *time = new QLabel(sdelaytime);
+    QLineEdit *time = new QLineEdit(sdelaytime);
+    connect(time,SIGNAL(textEdited(const QString &text)),this,SLOT(textChanged_SLOT(const QString &text)));
 
     hLayout->addWidget(isLearningKey);
     hLayout->addStretch(1);
@@ -1328,6 +1334,12 @@ void MainWindow::atAddItem2ScriptListWidget(int ir_type,QString button_name,int 
 
     QListWidgetItem * scriptItem = new QListWidgetItem(ui->atScriptlistWidget);
     ui->atScriptlistWidget->setItemWidget(scriptItem,wContainer);
+}
+void MainWindow::textChanged_SLOT(const QString &text)
+{
+    qDebug() << "textChanged_SLOT :" << text;
+    int index = ui->atScriptlistWidget->currentRow()-1;
+    //IR_items.at(index).delay_time = text.toInt();
 }
 void MainWindow::add_to_list(QString button_name,uint32_t delay)
 {
@@ -1418,15 +1430,15 @@ void MainWindow::atRemoveButton_slot()
 
 void MainWindow::atClearScriptWidget()
 {
-    qDebug() << "before cleared:atScriptlistWidget->count() = "<<ui->atScriptlistWidget->count();
+    //qDebug() << "before cleared:atScriptlistWidget->count() = "<<ui->atScriptlistWidget->count();
     int count = ui->atScriptlistWidget->count();
     if (count > 1)
     {
-        int index = ui->atScriptlistWidget->currentRow();
+        //int index = ui->atScriptlistWidget->currentRow();
 
         for (int i = 1;i < count;i++)
         {
-             qDebug() << "remove index :" << i;
+             //qDebug() << "remove index :" << i;
             ui->atScriptlistWidget->removeItemWidget(ui->atScriptlistWidget->takeItem(1));
 
         }

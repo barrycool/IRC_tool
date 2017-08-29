@@ -59,5 +59,4 @@ FORMS += \
     upgradedialog.ui
 
 RESOURCES += \
-    resource.qrc \
     resource.qrc

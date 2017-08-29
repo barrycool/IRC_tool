@@ -212,5 +212,22 @@ background-image: url(:/new/icon/resource-icon/button-light-blue.png);</string>
   </widget>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>upCancelButton</sender>
+   <signal>clicked()</signal>
+   <receiver>UpgradeDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>475</x>
+     <y>275</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>489</x>
+     <y>280</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

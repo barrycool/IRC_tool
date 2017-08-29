@@ -124,7 +124,7 @@ private slots:
     //void ReadMcuVersionSlot();
     void sendcmdTimeout();
     //void checkForMcuUpgrade(); //lialian add for upgrade
-    void sendCmdforUpgradeSlot(char *,int);
+    void sendCmdforUpgradeSlot(uint8_t *,int);
 
     void on_actionIRWave_triggered();
 
@@ -134,13 +134,13 @@ private slots:
     void logSaveAsButton_slot();
     void logSaveButton_slot();
     void logClearButton_slot();
+    void textChanged_SLOT(const QString &text);
 
 signals:
     //void sendsignal();
     void send2learningwave();
     void updateVersionSignal(IR_MCU_Version_t *);
-    void receiveAckSignal();
-    void receiveFinshSignal();
+    void receiveAckSignal(int);
     void cmdFailSignal();
 
 private:

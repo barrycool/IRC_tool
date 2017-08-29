@@ -13,13 +13,13 @@ upgrade::upgrade()
 void upgrade_finish(QSerialPort &port, uint8_t seq_num);
 void upgrade_calucate_bin_check_sum();
 
-FILE *upgrade_file;
+//FILE *upgrade_file;
 
-#define PACKET_MAX_SIZE 192
-uint8_t packet_idx;
-uint8_t upgrade_flag;
-uint32_t total_file_length;
-double current_file_length;
+//#define PACKET_MAX_SIZE 192
+//uint8_t packet_idx;
+//uint8_t upgrade_flag;
+//uint32_t total_file_length;
+//double current_file_length;
 /*
 uint8_t upgrade_init(QSerialPort &port, uint8_t seq_num, QProgressBar *progressBar)
 {

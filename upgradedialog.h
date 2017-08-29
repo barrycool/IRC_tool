@@ -32,15 +32,14 @@ public:
 
 signals:
     getVersionSignal();
-    sendCmdSignal(char* , int);
+    sendCmdSignal(uint8_t* , int);
     signalDownloadFinished();
 
 private slots:
     void checkForMcuUpgrade();
     void SendCmd2GetCurrentVersion();
     void updateCurrentVersionSlot(IR_MCU_Version_t *);
-    void ackReceivedSlot();
-    void finishReceivedSlot();
+    void ackReceivedSlot(int);
     void cmdFailSlot();
     void openUrl_slot(QString);
     //void onLookupHost(QHostInfo host);
@@ -52,30 +51,23 @@ private slots:
 
 private:
     Ui::UpgradeDialog *ui;
-    //int currentMcuVersionYear;
-    //int currentMcuVersionMonth;
-    //int currentMcuVersionDay;
+
     uint32_t currentMcuVersion;
     uint32_t availableMcuVersion;
 
     QLabel *upWebLinklable;
-    QList<char *> upgradePacketList;
-    QList<uint8_t *> upgradeCmdList;
+    QList<uint8_t *> upgradePacketList;
     QSemaphore *cmdSemaphore;
 
-    void upCancelButton_slot();
-    void addUpgradeStartPacket();
-    void addUpgradeFinishPacket();
-    void addUpgradeBinPacket();
-    void getUpgradeCmdList();
-    void sendUpgradePacket();
+    void sendUpgradeStartPacket();
+    void sendUpgradeFinishPacket();
+    void sendUpgradeBinPacket();
+
     void doDownload(QUrl fileURL,QFile *dstFile);
     //QNetworkReply *avatorReply;
     //QNetworkAccessManager *avatorManager;
 
     QString dstBinFilePath;
-    int binfileLen;
-    int progressStep;
 
 };
 
