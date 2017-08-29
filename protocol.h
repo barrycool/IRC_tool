@@ -7,7 +7,7 @@
 #define FRAME_HEADER        0x55
 #define MAX_KEY_LEN         128
 #define MAX_NAME_LEN        16
-#define UPGRADE_PACKET_SIZE 128
+#define UPGRADE_PACKET_SIZE 52
 #define BUF_LEN             255
 #define IR_MAX_LEVEL_NUMBER     10
 #define FAIL_RETRY_TIMES    1
@@ -152,14 +152,15 @@ struct frame_t {
 };
 
 struct IR_MCU_Version_t {
-  uint8_t year_high;
-  uint8_t year_low;
-  uint8_t month;
   uint8_t day;
+  uint8_t month;
+  uint8_t year_low;
+  uint8_t year_high;
 };
 
 struct IR_Upgrade_Packet_t {
-    uint8_t packet_id;
+    uint8_t packet_id1;
+    uint8_t packet_id2;
     char data[UPGRADE_PACKET_SIZE];
 };
 

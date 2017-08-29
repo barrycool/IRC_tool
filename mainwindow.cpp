@@ -240,8 +240,8 @@ void MainWindow::serial_receive_data()
         return;
     }
 
-    qDebug() << "receive packet:";
-    log = "receive packet: \n";
+    //qDebug() << "receive packet:";
+    log = "receive packet:";
     output_log(log,0);
 
     for(uint8_t j = 0; j< buf_len + 1; j++)
@@ -839,7 +839,7 @@ void MainWindow::getCurrentMcuVersion()
    // currentMcuVersionYear = 2017;
    // currentMcuVersionMonth = 07;
     //currentMcuVersionDay = 07;
-
+/*
     IR_MCU_Version_t version;
     version.year_high = 20;
     version.year_low = 17;
@@ -848,7 +848,7 @@ void MainWindow::getCurrentMcuVersion()
 
     emit updateVersionSignal(&version);
     return; //just for test
-
+*/
     if(!serial.isOpen())
     {
         //QMessageBox::warning(this,"Send Error","Please Open Serial Port First!\n");
@@ -857,7 +857,7 @@ void MainWindow::getCurrentMcuVersion()
         output_log(logstr,0);
         return;
     }
-   // qDebug() << "clear_cmd_list_handle:send CLEAR_CMD_LIST to mcu\n";
+
     uint8_t buf[BUF_LEN];
     memset(buf,0x0,BUF_LEN);
     struct frame_t *frame = (struct frame_t *)buf;
@@ -900,7 +900,15 @@ void MainWindow::loadInsetIrMapTable()
         qDebug() << logstr;
         output_log(logstr,1);
 
-        QMessageBox::information(this,"Error","There's no inset IrMapTable Dir!");
+        //QMessageBox::information(this,"Error","There's no inset IrMapTable Dir!");
+        bool ok = insetIrMapTableDir.mkdir(keyMapDirPath);
+        if( ok )
+        {
+            logstr = "KeyMapConfig created success.";
+            qDebug() << logstr;
+            output_log(logstr,0);
+        }
+
         return;
     }
 
@@ -1766,7 +1774,12 @@ void MainWindow::output_log(const QString log,int flag)
     {
         ui->atLogText->append(log);
     }
-    ui->logTextEdit->append(log);
+
+    QDateTime time = QDateTime::currentDateTime();//获取系统现在的时间
+    QString str = time.toString("yyyy-MM-dd_hh:mm:ss"); //设置显示格式
+    str.append("  ");
+    str.append(log);
+    ui->logTextEdit->append(str);
 }
 
 /*---------------------lianlian add for LearningKey----------------*/
@@ -2191,33 +2204,66 @@ void MainWindow::logSaveButton_slot()
     output_log(logstr,1);
 
     QDir *dir = new QDir(logDirPath);
+    if(!dir->exists())
+    {
+        logstr = "logDirPath doesn't exist";
+        qDebug() << logstr;
+        output_log(logstr,1);
+
+        bool ok = dir->mkdir(logDirPath);
+        if( ok )
+        {
+            logstr = "logDirPath created success.";
+            qDebug() << logstr;
+            output_log(logstr,0);
+        }
+        else
+        {
+            logstr = "save fail.";
+            qDebug() << logstr;
+            output_log(logstr,1);
+            return;
+        }
+
+    }
     dir->setCurrent(logDirPath);
 
     QDateTime time = QDateTime::currentDateTime();//获取系统现在的时间
-    QString str = time.toString("yyyy-MM-dd_hh:mm:ss"); //设置显示格式
+    QString str = time.toString("yyyyMMdd_hh_mm_ss"); //设置显示格式
     QString filename = "AutoSave_";
             filename.append(str).append(".txt");
 
     logstr = "save to file: ";
     logstr.append(filename);
     qDebug() << logstr;
-    output_log(logstr,1);
+    //output_log(logstr,1);
 
-    QFile *logfile = new QFile;
-    //QFile *tempFile = new QFile;
-    logfile->setFileName(filename);
+    QFile logfile( filename );
+    logfile.open(QIODevice::WriteOnly);
+    logfile.close();  //创建文件
+    if(logfile.exists())
+    {
+        qDebug() << "log 文件创建成功";
+    }
+    else
+    {
+        qDebug() << "log 文件创建失败";
+    }
 
-    bool ok = logfile->open(QIODevice::WriteOnly|QIODevice::Text);//以只读模式打开
+
+
+    bool ok = logfile.open(QIODevice::ReadWrite|QIODevice::Text);//以只读模式打开
+
     if(ok)
     {
-      QTextStream out(logfile);  //文件与文本流相关联
+      QTextStream out(&logfile);  //文件与文本流相关联
       out << ui->logTextEdit->toPlainText() << "\n";
     }
     else
     {
         qDebug("save fail!");
+        //output_log("save fail!",1);
     }
 
-    logfile->close();
-    delete logfile;  //需手动删除,以免内存泄漏
+    logfile.close();
 }

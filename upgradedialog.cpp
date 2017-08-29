@@ -4,6 +4,17 @@ static bool isUpgradefileDownloaded = 0;
 static bool isNetworkAccessable = 0;
 QFile *dstbinfile;
 
+#define VALID_UPGRADE_FLAG 0xA55AA55A
+
+struct upgrade_bin_tailer_t{
+    uint32_t upgrade_flag;
+    uint32_t upgrade_version;
+    uint32_t upgrade_fileLength;
+    uint32_t upgrade_crc32;
+};
+//FILE *upgrade_file;
+bool check_valid_upgrade_bin_version(QString fileName,uint32_t &version, uint32_t &checkSum);
+
 UpgradeDialog::UpgradeDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::UpgradeDialog)
@@ -13,9 +24,10 @@ UpgradeDialog::UpgradeDialog(QWidget *parent) :
     QObject::connect(ui->upUpgradeButton,SIGNAL(clicked()),this,SLOT(upUpgradeButton_slot()));
     QObject::connect(ui->upCancelButton,SIGNAL(clicked()),this,SLOT(upCancelButton_slot()));
     //QObject::connect(ui->upCancelButton,SIGNAL(clicked()),this,SLOT(upCancelButton_slot()));
-    QObject::connect(ui->upCheckUpdateButton,SIGNAL(clicked()),this,SLOT(checkForMcuUpgrade()));
+    //QObject::connect(ui->upCheckUpdateButton,SIGNAL(clicked()),this,SLOT(checkForMcuUpgrade()));
     QObject::connect(ui->upFreshAvailableButton,SIGNAL(clicked()),this,SLOT(checkForMcuUpgrade()));
     QObject::connect(ui->upFreshCurrentButton,SIGNAL(clicked()),this,SLOT(SendCmd2GetCurrentVersion()));
+    QObject::connect(ui->upChooseLocalFileButton,SIGNAL(clicked()),this,SLOT(upChooseLocalFileButton_slot()));
 
     connect(this,SIGNAL(getVersionSignal()),parent,SLOT(getCurrentMcuVersion()));
     connect(this,SIGNAL(sendCmdSignal(char *,int)),parent,SLOT(sendCmdforUpgradeSlot(char*,int)));
@@ -23,7 +35,7 @@ UpgradeDialog::UpgradeDialog(QWidget *parent) :
     connect(parent,SIGNAL(receiveFinshSignal()),this,SLOT(finishReceivedSlot()));
     connect(parent,SIGNAL(cmdFailSignal()),this,SLOT(cmdFailSlot()));
     connect(parent,SIGNAL(updateVersionSignal(IR_MCU_Version_t *)),this,SLOT(updateCurrentVersionSlot(IR_MCU_Version_t *)));
-    connect(this,SIGNAL(signalDownloadFinished()),parent,SLOT(analysisVersionfromBin()));
+    //connect(this,SIGNAL(signalDownloadFinished()),parent,SLOT(analysisVersionfromBin()));
     cmdSemaphore = new QSemaphore(1);
 
     upWebLinklable = new QLabel( "<a href = http://www.mediatek.inc >www.mediatek.inc</a>", this );
@@ -35,6 +47,7 @@ UpgradeDialog::UpgradeDialog(QWidget *parent) :
     //check if can access the internet
     //QHostInfo::lookupHost("www.baidu.com",this,SLOT(onLookupHost(QHostInfo)));
     dstBinFilePath = qApp->applicationDirPath().append("\\UpgradeBin");
+    ui->upUpgradeButton->setDisabled(true);
 
 }
 
@@ -139,19 +152,17 @@ void UpgradeDialog::updateCurrentVersionSlot(IR_MCU_Version_t * mcuVersion)
     //currentMcuVersionMonth = 07;
     //currentMcuVersionDay = 07;
 
-    uint8_t yearHigh = mcuVersion->year_high;
-    uint8_t yearLow = mcuVersion->year_low;
+    QString currentVersionStr = QString::asprintf("%02x%02x%02x%02x",
+                                                 mcuVersion->year_high, mcuVersion->year_low,
+                                                 mcuVersion->month, mcuVersion->day);
 
-    currentMcuVersionMonth = mcuVersion->month;
-    currentMcuVersionDay = mcuVersion->day;
-    currentMcuVersionYear = QString::number(yearHigh).append(QString::number(yearLow)).toInt();
+    currentMcuVersion = currentVersionStr.toInt();
 
-    QString tmp = QString::number(currentMcuVersionYear).append("_").append(QString::number(currentMcuVersionMonth)).append("_").append(QString::number(currentMcuVersionDay));
-    ui->upCurrentlineEdit->setText(tmp);
+    ui->upCurrentlineEdit->setText(currentVersionStr);
 
-    qDebug() << "get Current mcu version:" << tmp;
+    qDebug() << "get Current mcu version:" << currentVersionStr;
 
-    ui->upFreshCurrentButton->setStyleSheet("QPushButton{image: url(:/new/icon/resource-icon/accepted-48.png)");
+   // ui->upFreshCurrentButton->setStyleSheet("QPushButton{image: url(:/new/icon/resource-icon/accepted-48.png)");
 }
 
 void UpgradeDialog::SendCmd2GetCurrentVersion()
@@ -159,12 +170,15 @@ void UpgradeDialog::SendCmd2GetCurrentVersion()
     qDebug() << "send signal to mainwindow to getcurrent mcu version";
     emit getVersionSignal();
 }
+
+/*
 void UpgradeDialog::analysisVersionfromBin()
 {
     //analysis version from bin
     int  versionYear = 2017;
     int  versionMonth = 8;
     int  versionDay = 24;
+    QString logstr;
     QString tmp = QString::number(versionYear).append("_").append(QString::number(versionMonth)).append("_").append(QString::number(versionDay));
     ui->upAvailablelineEdit->setText(tmp);
 
@@ -172,24 +186,9 @@ void UpgradeDialog::analysisVersionfromBin()
        || (versionYear == currentMcuVersionYear && versionMonth > currentMcuVersionMonth)
        || (versionYear == currentMcuVersionYear && versionMonth == currentMcuVersionMonth && versionDay > currentMcuVersionDay))
     {
-        //QMessageBox::information(this,"Upgrade available","Upgrade for MCU is available");
-        QString str = "The latest version of MCU is: ";
-        str.append(tmp).append("\n");
-        str.append("Do you want to upgrade for MCU?");
-        QMessageBox::StandardButton reply = QMessageBox::question(this, "Upgrade available", str, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
-        if(reply == QMessageBox::Yes)
-        {
-             //ui->UpgradeSubWindow->showMaximized();
-             //ui->upDownloadButton->setDisabled(true);
-             //ui->upCancelButton->setDisabled(false);
-             upUpgradeButton_slot();
-             return;
-        }
-        else
-        {
-            ui->upUpgradeButton->setEnabled(true);
-        }
-
+        logstr ="There is new version to upgrade,press Upgrade button to start";
+        ui->upStatusText->setText(logstr);
+        ui->upUpgradeButton->setEnabled(true);
     }
     else
     {
@@ -198,7 +197,7 @@ void UpgradeDialog::analysisVersionfromBin()
         qDebug() <<"no need to upgrade!";
     }
 }
-
+*/
 void UpgradeDialog::checkForMcuUpgrade()
 {
     //need to download upgrade files from github,and get the version
@@ -236,30 +235,57 @@ void UpgradeDialog::checkForMcuUpgrade()
         }
         else
         {
-            //get from p disk
-
-            dstBinFilePath = "E:/github/downloadtest/downloadtest/peerwireclient.cpp";
-            /*
-            srcBinFilePath = "\\gcn.mediatek.inc\\MSZ_DC\\HSDSA1_SA5\\QT5\\watermelon-war-client\\watermelon_war.exe";
-            QFile *srcBinFile = new QFile;
-            srcBinFile->setFileName(srcBinFilePath);
-            */
-            dstbinfile = new QFile;
-            dstbinfile->setFileName(dstBinFilePath);
-
-            if(dstbinfile->exists())
+            //get from local disk
+            QString str = "Your Network is not avilable,,Do you want to upgrade from Local file?";
+            QMessageBox::StandardButton reply = QMessageBox::question(this, "No Network ", str, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+            if(reply == QMessageBox::Yes)
             {
-                //dstbinfile->remove();
-                //QFile::remove(dstBinFileName);
-                binfileLen = dstbinfile->size();
-                qDebug() << "bin file is exist! filelen: " <<binfileLen;
-                isUpgradefileDownloaded = true;
-                emit signalDownloadFinished();  //send signal to analysis version from bin file
+                 upChooseLocalFileButton_slot();
+                 return;
             }
-
+            else
+            {
+                ui->upUpgradeButton->setEnabled(false);
+            }
             //QFile::copy(srcBinFilePath,dstBinFileName);
 
         }
+}
+void UpgradeDialog::upChooseLocalFileButton_slot()
+{
+    uint32_t checksum;
+    QString logstr;
+    QString path = QFileDialog::getOpenFileName(this, "choose upgrade file", "", "bin file(*.bin)");
+    dstBinFilePath = path;
+    if (path.size() != 0)
+    {
+        if (check_valid_upgrade_bin_version(path, availableMcuVersion, checksum))
+        {
+            if(availableMcuVersion <= currentMcuVersion)
+            {
+                logstr ="currentMcuVersion is newer than local upgrade file,no need to upgrade";
+                qDebug() << logstr;
+                ui->upStatusText->setText(logstr);
+            }
+            else
+            {
+                logstr = "local upgrade file is newer than currentMcuVersion,Please upgrade";
+                qDebug() << logstr;
+                ui->upStatusText->setText(logstr);
+            }
+
+            ui->upAvailablelineEdit->setText(QString::asprintf("%X", availableMcuVersion));
+            //ui->LB_checkSum->setText(QString::asprintf("%X", checksum));
+            ui->upUpgradeButton->setEnabled(true);
+            ui->upLocalPathEdit->setText(path);
+            isUpgradefileDownloaded = true;
+            //emit signalDownloadFinished();  //send signal to analysis version from bin file
+        }
+        else
+        {
+            ui->upUpgradeButton->setEnabled(false);
+        }
+    }
 }
 void UpgradeDialog::upCancelButton_slot()
 {
@@ -278,8 +304,9 @@ void UpgradeDialog::upUpgradeButton_slot()
     }
 
     //ui->upCancelButton->setDisabled(true);
-    ui->upProgressBar->setMaximum(100);
-    ui->upProgressBar->setValue(0);
+    ui->upProgressBar->setMinimum(0);
+    ui->upProgressBar->setMaximum(0);
+    //ui->upProgressBar->setValue(0);
     ui->upProgressBar->show();
 
     QFile binFile(dstBinFilePath);
@@ -289,22 +316,22 @@ void UpgradeDialog::upUpgradeButton_slot()
         //QMessageBox::critical(this,"DownLoad Error","Download file " + binPath +"Error");
         return;
     }
-    ui->upStatusText->setText("Start Download");
+    ui->upStatusText->setText("Start Upgrade");
     QDataStream in(&binFile);
     char* buf = (char *)malloc(UPGRADE_PACKET_SIZE);
 
     while(in.readRawData(buf,UPGRADE_PACKET_SIZE)>0)
     {
-        ui->upStatusText->append("Downloading...");
+        //ui->upStatusText->append("Downloading...");
         upgradePacketList.append(buf);
 
     }
 
-    ui->upStatusText->append("Done");
+    //ui->upStatusText->append("Done");
     binFile.close();
 
     getUpgradeCmdList();
-    startUpgrade();
+    sendUpgradePacket();
 
 
 }
@@ -330,27 +357,12 @@ void UpgradeDialog::addUpgradeFinishPacket()
     uint8_t buf[BUF_LEN];
     memset(buf,0x0,BUF_LEN);
 
-    uint32_t file_len = binfileLen; //upgrade bin file len
-
-    //fseek(upgrade_file, 0, SEEK_END);
-    //file_len = ftell(upgrade_file);
-
     struct frame_t *frame = (struct frame_t *)buf;
 
     frame->header = FRAME_HEADER;
     frame->data_len = sizeof(struct frame_t);
     frame->seq_num = seqnum++;
     frame->msg = UPGRADE_FINISH;
-
-    buf[frame->data_len++] = file_len & 0xFF;
-    buf[frame->data_len++] = (file_len >> 8) & 0xFF;
-    buf[frame->data_len++] = (file_len >> 16) & 0xFF;
-    buf[frame->data_len++] = (file_len >> 24) & 0xFF;
-
-    buf[frame->data_len++] = crc32 & 0xFF;
-    buf[frame->data_len++] = (crc32 >> 8) & 0xFF;
-    buf[frame->data_len++] = (crc32 >> 16) & 0xFF;
-    buf[frame->data_len++] = (crc32 >> 24) & 0xFF;
 
     buf[frame->data_len] = CRC8Software(buf, frame->data_len);
 
@@ -373,7 +385,9 @@ void UpgradeDialog::addUpgradeBinPacket()
         frame->msg = SEND_UPGRADE_PACKET;
 
         IR_Upgrade_Packet_t IR_upg_packet;
-        IR_upg_packet.packet_id = i;
+        IR_upg_packet.packet_id1 = i & 0xFF;
+        IR_upg_packet.packet_id2 = (i >> 8) & 0xFF;
+
         memcpy(IR_upg_packet.data,upgradePacketList.at(i),UPGRADE_PACKET_SIZE);
 
         memcpy(frame->msg_parameter, &IR_upg_packet, sizeof(IR_Upgrade_Packet_t));
@@ -389,9 +403,13 @@ void UpgradeDialog::getUpgradeCmdList()
     addUpgradeBinPacket();
     addUpgradeFinishPacket();
     qDebug() << "getUpgradeCmdList:size= " << upgradeCmdList.size();
+    progressStep = 100/upgradeCmdList.size();
+    ui->upProgressBar->setMinimum(0);
+    ui->upProgressBar->setMaximum(100);
+    ui->upProgressBar->setValue(0);
 }
 
-void UpgradeDialog::startUpgrade()
+void UpgradeDialog::sendUpgradePacket()
 {
 
     if(upgradeCmdList.size() >= 0)
@@ -399,6 +417,7 @@ void UpgradeDialog::startUpgrade()
         uint8_t buf[BUF_LEN];
         memset(buf,0x0,BUF_LEN);
         struct frame_t *frame = (struct frame_t *)upgradeCmdList.at(0);
+        ui->upProgressBar->setValue(ui->upProgressBar->value() + progressStep);
         cmdSemaphore->acquire();
 
         emit sendCmdSignal((char*)buf,frame->data_len + 1);
@@ -406,14 +425,13 @@ void UpgradeDialog::startUpgrade()
     }
     else
     {
-        //ui->upProgressBar->setMaximum(100);
         ui->upProgressBar->setValue(99);
     }
 }
 void UpgradeDialog::ackReceivedSlot()
 {
     cmdSemaphore->release();
-    startUpgrade();
+    sendUpgradePacket();
 }
 void UpgradeDialog::finishReceivedSlot()
 {
@@ -429,15 +447,16 @@ void UpgradeDialog::cmdFailSlot()
 {
   ui->upStatusText->append("send cmd fail!");
   ui->upProgressBar->setValue(100);
+
 }
 
 typedef uint32_t u32;
+
 //软件CRC32 u32数据计算
-u32 upgrade_crc32(u32 *ptr, u32 len)
+u32 upgrade_crc32(u32 *ptr, u32 len, u32 &CRC32)
 {
     u32 xbit;
     u32 data;
-    u32 CRC32 = 0xFFFFFFFF;
     u32 bits;
     const u32 dwPolynomial = 0x04c11db7;
     u32 i;
@@ -462,15 +481,72 @@ u32 upgrade_crc32(u32 *ptr, u32 len)
     }
     return CRC32;
 }
-/*
-void upgrade_calucate_bin_check_sum()
+
+bool check_valid_upgrade_bin_version(QString fileName,uint32_t &version, uint32_t &checkSum)
 {
-    uint32_t buf[20 * 1024];
-    uint32_t read_cnt;
+    QByteArray name = fileName.toLatin1();
 
-    fseek(dstbinfile, 0, SEEK_SET);
+    FILE * bin_file = fopen(name.data(), "rb");
+    if (bin_file == NULL)
+    {
+        qDebug() << "open file error" <<endl;
+        return false;
+    }
 
-    read_cnt = fread(buf, 4, 5120, dstbinfile);
-    crc32 = upgrade_crc32(buf, read_cnt);
+    fseek(bin_file, 0, SEEK_END);
+    uint32_t bin_size = ftell(bin_file);
+    if (bin_size < sizeof(struct upgrade_bin_tailer_t))
+    {
+        qDebug() << "invalid upgrade bin size" <<endl;
+        fclose(bin_file);
+        return false;
+    }
+
+    struct upgrade_bin_tailer_t upgrade_bin_tailer;
+    fseek(bin_file, -sizeof(struct upgrade_bin_tailer_t), SEEK_END);
+    fread(&upgrade_bin_tailer, 1, sizeof(struct upgrade_bin_tailer_t), bin_file);
+
+    if (upgrade_bin_tailer.upgrade_flag != VALID_UPGRADE_FLAG)
+    {
+        qDebug() << "invalid upgrade flag" <<endl;
+        fclose(bin_file);
+        return false;
+    }
+
+    uint32_t buf[256];
+    uint32_t buf_len;
+    checkSum = 0xFFFFFFFF;
+
+    bin_size -= sizeof(struct upgrade_bin_tailer_t);
+
+
+    fseek(bin_file, 0, SEEK_SET);
+    do
+    {
+        buf_len = fread(buf, 4, 256, bin_file);
+
+        if (bin_size > buf_len * 4)
+        {
+            bin_size -= buf_len * 4;
+        }
+        else
+        {
+            buf_len = bin_size / 4;
+            bin_size = 0;
+        }
+
+        upgrade_crc32(buf, buf_len, checkSum);
+    }
+    while (bin_size > 0);
+
+    if (checkSum != upgrade_bin_tailer.upgrade_crc32)
+    {
+        qDebug() << "invalid upgrade checkSum" <<endl;
+        fclose(bin_file);
+        return false;
+    }
+
+    version = upgrade_bin_tailer.upgrade_version;
+    fclose(bin_file);
+    return true;
 }
-*/

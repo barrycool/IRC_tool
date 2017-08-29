@@ -46,30 +46,36 @@ private slots:
     //void onLookupHost(QHostInfo host);
     //void httpDowload();
     //void httpDowloadFinished();
-    void analysisVersionfromBin();
+    //void analysisVersionfromBin();
+    void upChooseLocalFileButton_slot();
+    void upUpgradeButton_slot();
 
 private:
     Ui::UpgradeDialog *ui;
-    int currentMcuVersionYear;
-    int currentMcuVersionMonth;
-    int currentMcuVersionDay;
+    //int currentMcuVersionYear;
+    //int currentMcuVersionMonth;
+    //int currentMcuVersionDay;
+    uint32_t currentMcuVersion;
+    uint32_t availableMcuVersion;
+
     QLabel *upWebLinklable;
     QList<char *> upgradePacketList;
     QList<uint8_t *> upgradeCmdList;
     QSemaphore *cmdSemaphore;
-    void upUpgradeButton_slot();
+
     void upCancelButton_slot();
     void addUpgradeStartPacket();
     void addUpgradeFinishPacket();
     void addUpgradeBinPacket();
     void getUpgradeCmdList();
-    void startUpgrade();
+    void sendUpgradePacket();
     void doDownload(QUrl fileURL,QFile *dstFile);
     //QNetworkReply *avatorReply;
     //QNetworkAccessManager *avatorManager;
 
     QString dstBinFilePath;
     int binfileLen;
+    int progressStep;
 
 };
 
