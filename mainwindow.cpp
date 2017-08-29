@@ -295,7 +295,7 @@ void MainWindow::serial_receive_data()
         }
         else if (frame->msg_parameter[0] == START_SEND)
         {
-            ui->atStartButton->setText("Pause");
+            ui->atStartButton->setText("Stop");
         }
         else if (frame->msg_parameter[0] == PAUSE_SEND)
         {
@@ -809,7 +809,7 @@ void MainWindow::ir_button_Slot_connect()
         QObject::connect(ui->atAddButton,SIGNAL(clicked()),this,SLOT(atAddButton_slot()));
         QObject::connect(ui->atRemoveButton,SIGNAL(clicked()),this,SLOT(atRemoveButton_slot()));
         QObject::connect(ui->atSaveButton,SIGNAL(clicked()),this,SLOT(atSaveButton_slot()));
-        QObject::connect(ui->atClear,SIGNAL(clicked()),this,SLOT(atClear_slot()));
+        QObject::connect(ui->atClear,SIGNAL(clicked()),this,SLOT(atClearScriptWidget()));
         QObject::connect(ui->atRealTimeSendButton,SIGNAL(clicked()),this,SLOT(atRealTimeSendButton_slot()));
         QObject::connect(ui->atDownloadButton,SIGNAL(clicked()),this,SLOT(atDownloadButton_slot()));
         QObject::connect(ui->atStartButton,SIGNAL(clicked()),this,SLOT(atStartButton_slot()));
@@ -1412,20 +1412,21 @@ void MainWindow::atRemoveButton_slot()
     }
     else
     {
-        atClear_slot();
+        atClearScriptWidget();
     }
 }
+
 void MainWindow::atClearScriptWidget()
 {
-    //qDebug() << "before cleared:atScriptlistWidget->count() = "<<ui->atScriptlistWidget->count();
+    qDebug() << "before cleared:atScriptlistWidget->count() = "<<ui->atScriptlistWidget->count();
     int count = ui->atScriptlistWidget->count();
     if (count > 1)
     {
-        //int index = ui->atScriptlistWidget->currentRow();
+        int index = ui->atScriptlistWidget->currentRow();
 
         for (int i = 1;i < count;i++)
         {
-             //qDebug() << "remove index :" << i;
+             qDebug() << "remove index :" << i;
             ui->atScriptlistWidget->removeItemWidget(ui->atScriptlistWidget->takeItem(1));
 
         }
@@ -1643,18 +1644,6 @@ void MainWindow::atRealTimeSendButton_slot()
     sendCmd2MCU(buf, frame->data_len + 1);
 
 }
-void MainWindow::atClear_slot()
-{
-    int counter =  ui->atScriptlistWidget->count();
-    //this->setWindowTitle(VERSION);
-    for(int index = counter; index >= 1 ; index--)
-    {
-        IR_items.removeAt(index-1);
-        QListWidgetItem *item = ui->atScriptlistWidget->takeItem(index+1);
-        //ui->atScriptlistWidget->removeItemWidget(item);
-        delete item;
-    }
-}
 
 void MainWindow::set_cmd_list_handle()
 {
@@ -1755,7 +1744,7 @@ void MainWindow::atStartButton_slot()
         frame->msg = START_SEND;//CLEAR_CMD_LIST;
         ui->atStartButton->setText("Pause");
     }
-    else if(ui->atStartButton->text() == "Pause")
+    else if(ui->atStartButton->text() == "Stop")
     {
         //set_cmd_list_timer.stop();
         qDebug() << "send PAUSE_SEND";

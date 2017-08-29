@@ -114,7 +114,7 @@ private slots:
     void atRemoveButton_slot();
     void atLoadscriptBut_slot();
     void atSaveButton_slot();
-    void atClear_slot();
+    void atClearScriptWidget();
     void atDownloadButton_slot();
     void atStartButton_slot();
     //void atLoadKeyMapButton_slot();
@@ -185,7 +185,6 @@ private:
     void set_IR_device(int index);
     void set_IR_command_list();
     void atAddItem2ScriptListWidget(int ir_type,QString button_name,int delaytime);
-    void atClearScriptWidget();
 
     QSettings *settings;
 
