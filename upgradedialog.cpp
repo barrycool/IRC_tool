@@ -17,12 +17,13 @@ int upgrade_flag = 0;
 
 bool check_valid_upgrade_bin_version(QString fileName,uint32_t &version, uint32_t &checkSum);
 
-UpgradeDialog::UpgradeDialog(QWidget *parent) :
+UpgradeDialog::UpgradeDialog(QWidget *parent,QSerialPort *port/*QString portName8*/) :
     QDialog(parent),
     ui(new Ui::UpgradeDialog)
 {
     ui->setupUi(this);
     ui->upProgressBar->hide();
+    //serial = port;
     QObject::connect(ui->upUpgradeButton,SIGNAL(clicked()),this,SLOT(upUpgradeButton_slot()));
     //QObject::connect(ui->upCancelButton,SIGNAL(clicked()),this,SLOT(upCancelButton_slot()));
     //QObject::connect(ui->upCheckUpdateButton,SIGNAL(clicked()),this,SLOT(checkForMcuUpgrade()));
@@ -49,13 +50,19 @@ UpgradeDialog::UpgradeDialog(QWidget *parent) :
     //QHostInfo::lookupHost("www.baidu.com",this,SLOT(onLookupHost(QHostInfo)));
     //dstBinFilePath = qApp->applicationDirPath().append("\\UpgradeBin");
     ui->upUpgradeButton->setDisabled(true);
-
+    //connect(&serial, SIGNAL(readyRead()), this, SLOT(serial_receive_ack()));
+    //getPortInfoByName(portName);
 }
+
+//int oldPortOpened = 0;
 
 UpgradeDialog::~UpgradeDialog()
 {
+    //serial->close();
+    upgrade_flag = 0;
     delete ui;
 }
+
 /*
 void UpgradeDialog::onLookupHost(QHostInfo host)
 {
@@ -296,12 +303,11 @@ void UpgradeDialog::upUpgradeButton_slot()
         checkForMcuUpgrade(); //if binfile has not been download,download it first
     }
 
-    //ui->upCancelButton->setDisabled(true);
     ui->upProgressBar->setMinimum(0);
-    ui->upProgressBar->setMaximum(0);
-    //ui->upProgressBar->setValue(0);
+    ui->upProgressBar->setMaximum(100);
+
     ui->upProgressBar->show();
-    //upgradePacketList.clear();
+
     QByteArray name = dstBinFilePath.toLatin1();
 
     upgrade_file = fopen(name.data(), "rb");
@@ -318,38 +324,11 @@ void UpgradeDialog::upUpgradeButton_slot()
 
     qDebug() << "total_file_length" << total_file_length;
     ui->upStatusText->setText("Start Upgrade");
- /*
-    //upgrade_flag = 1;
-    size_t read_cnt = 0;
 
-    uint8_t tmpbuf[UPGRADE_PACKET_SIZE] = {0};
-    while((read_cnt = fread(tmpbuf, 1, UPGRADE_PACKET_SIZE, upgrade_file)) > 0)
-    {
-        //qDebug() << "read_cnt" << read_cnt;
-        //uint8_t buf[UPGRADE_PACKET_SIZE] = {0};
-        uint8_t *buf = (uint8_t *)malloc(UPGRADE_PACKET_SIZE);
-
-        if (read_cnt < UPGRADE_PACKET_SIZE)
-        {
-            memset(tmpbuf + read_cnt, 0xFF, UPGRADE_PACKET_SIZE - read_cnt);
-        }
-        memcpy(buf,tmpbuf,UPGRADE_PACKET_SIZE);
-        upgradePacketList.append(buf);
-
-    }
-     qDebug() << "upgradePacketList.size :" << upgradePacketList.size();
-    if (upgrade_file != NULL)
-    {
-        fclose(upgrade_file);
-        upgrade_file = NULL;
-    }
-*/
-    ui->upProgressBar->setMinimum(0);
-    ui->upProgressBar->setMaximum(100);
     ui->upProgressBar->setValue(0);
 
     sendUpgradeStartPacket();
-    qDebug() << "upgradePacketList.size :" << upgradePacketList.size();
+
 }
 
 extern int seqnum;
@@ -357,6 +336,12 @@ void UpgradeDialog::sendUpgradeStartPacket()
 {
     uint8_t buf[BUF_LEN];
     memset(buf,0x0,BUF_LEN);
+
+    packetid = 0;
+    current_file_length = 0;
+    upgrade_flag = 1;
+    seqnum = 1;
+
     struct frame_t *frame = (struct frame_t *)buf;
     ui->upStatusText->append("Sending start packet...");
     frame->data_len = sizeof(struct frame_t);
@@ -365,10 +350,11 @@ void UpgradeDialog::sendUpgradeStartPacket()
     frame->seq_num = seqnum++;
 
     buf[frame->data_len] = CRC8Software(buf, frame->data_len);
-    ui->upProgressBar->setValue(1);
+    //ui->upProgressBar->setValue(1);
     //cmdSemaphore->acquire();
 
     emit sendCmdSignal(buf,frame->data_len + 1);
+    //serial->write((char*)buf, frame->data_len + 1);
 
 }
 uint32_t crc32;
@@ -388,22 +374,21 @@ void UpgradeDialog::sendUpgradeFinishPacket()
 
     //cmdSemaphore->acquire();
 
-    ui->upProgressBar->setValue(99);
     emit sendCmdSignal(buf,frame->data_len + 1);
+    //serial->write((char*)buf, frame->data_len + 1);
 
-    //upgrade finished
-    ui->upProgressBar->setValue(100);
     ui->upStatusText->append("Upgrade Done!");
     if (upgrade_file != NULL)
     {
         fclose(upgrade_file);
         upgrade_file = NULL;
     }
-    QMessageBox::information(this,"Upgrade Finish","ugrade finish,please reset your device!");
     ui->upCancelButton->setText("Finish");
     ui->upCancelButton->setDisabled(false);
     ui->upUpgradeButton->setDisabled(true);
-    //upgrade_flag = 0;
+    upgrade_flag = 0;
+    //QMessageBox::information(this,"Upgrade Finish","ugrade finish,please reset your device!");
+
 }
 
 void UpgradeDialog::sendUpgradeBinPacket()
@@ -420,7 +405,7 @@ void UpgradeDialog::sendUpgradeBinPacket()
         return;
     }
     uint8_t buf[255] = {0};
-    size_t read_cnt;
+    size_t read_cnt = 0 ;
     ui->upStatusText->append("Sending bin packet...");
     struct frame_t *frame = (struct frame_t *)buf;
 
@@ -434,9 +419,11 @@ void UpgradeDialog::sendUpgradeBinPacket()
     packetid++;
 
     read_cnt = fread(buf + frame->data_len, 1, UPGRADE_PACKET_SIZE, upgrade_file);
+    //ui->upStatusText->append("read_cnt:" + QString::number(read_cnt));
     if (read_cnt == 0)
     {
         ui->upProgressBar->setValue(100);
+        ui->upStatusText->append("set progress bar as 100%");
         sendUpgradeFinishPacket();
         return;
     }
@@ -445,25 +432,14 @@ void UpgradeDialog::sendUpgradeBinPacket()
         memset(buf + frame->data_len + read_cnt, 0xFF, UPGRADE_PACKET_SIZE - read_cnt);
     }
 
-    current_file_length += read_cnt;
-
-    ui->upProgressBar->setValue((current_file_length / total_file_length) * 100);
+    current_file_length += read_cnt; 
 
     frame->data_len += UPGRADE_PACKET_SIZE;
     buf[frame->data_len] = CRC8Software(buf, frame->data_len);
 
     emit sendCmdSignal(buf,frame->data_len + 1);
-/*
-    }
-    else
-    {
-        if(upgrade_flag)
-        {
-            sendUpgradeFinishPacket();
-            upgrade_flag = 0;
-        }
-    }
-*/
+
+    //serial->write((char*)buf, frame->data_len + 1);
 }
 
 void UpgradeDialog::ackReceivedSlot(int msg_id)
@@ -475,13 +451,15 @@ void UpgradeDialog::ackReceivedSlot(int msg_id)
     {
         //SEND PACKET
         upgrade_flag = 1;
+        qDebug() <<"receive ack of UPGRADE_START";
         sendUpgradeBinPacket();
     }
     else if(msg_id == SEND_UPGRADE_PACKET)
     {
         //SEND PACKET
-        if(!upgradePacketList.isEmpty())
-            upgradePacketList.removeAt(0);
+        //if(!upgradePacketList.isEmpty())
+            //upgradePacketList.removeAt(0);
+        qDebug() <<"receive ack of SEND_UPGRADE_PACKET";
         ui->upProgressBar->setValue((current_file_length / total_file_length) * 100);
         sendUpgradeBinPacket();
     }
@@ -509,6 +487,7 @@ void UpgradeDialog::cmdFailSlot()
       upgrade_file = NULL;
   }
   ui->upCancelButton->setDisabled(false);
+  upgrade_flag = 0;
   //ui->upUpgradeButton->setDisabled(true);
   QMessageBox::critical(this,"Upgrade fail","Upgrade fail,Re-Plug usb2serial and try again!");
 

@@ -8,7 +8,7 @@
 #include <learningwave.h>
 #include <upgradedialog.h>
 #include <ir_learning.h>
-#include "upgrade.h"
+//#include "upgrade.h"
 
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
@@ -135,6 +135,11 @@ private slots:
     void logSaveButton_slot();
     void logClearButton_slot();
     void textChanged_SLOT(const QString &text);
+    void returnfromUpgrade();
+
+    void on_atUpMove_clicked();
+
+    void on_atDownMove_clicked();
 
 signals:
     //void sendsignal();
@@ -185,8 +190,10 @@ private:
     void set_IR_device(int index);
     void set_IR_command_list();
     void atAddItem2ScriptListWidget(int ir_type,QString button_name,int delaytime);
+    void atClearScriptWidgetOnly();
 
     QSettings *settings;
+
 
 };
 

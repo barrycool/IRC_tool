@@ -13,10 +13,12 @@
 #include <QSemaphore>
 #include <crc32.h>
 #include <QDesktopServices>
-#include "upgrade.h"
+#include <QtSerialPort/QSerialPort>
+#include <QtSerialPort/QSerialPortInfo>
+//#include "upgrade.h"
 //#include <QtNetwork/QHostInfo>
 //#include <QtNetwork/QNetworkAccessManager>
-
+#include <windows.h>
 
 namespace Ui {
 class UpgradeDialog;
@@ -27,7 +29,7 @@ class UpgradeDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit UpgradeDialog(QWidget *parent = 0);
+    explicit UpgradeDialog(QWidget *parent,QSerialPort *port/*QString portName*/);
     ~UpgradeDialog();
 
 signals:
@@ -68,6 +70,8 @@ private:
     //QNetworkAccessManager *avatorManager;
 
     QString dstBinFilePath;
+    //QSerialPort *serial;
+
 
 };
 

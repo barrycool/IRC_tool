@@ -36,7 +36,6 @@ SOURCES += \
     learningwave.cpp \
     upgradedialog.cpp \
     ir_learning.cpp \
-    upgrade.cpp \
     httpthread.cpp
 
 HEADERS += \
@@ -48,7 +47,6 @@ HEADERS += \
     learningwave.h \
     upgradedialog.h \
     ir_learning.h \
-    upgrade.h \
     httpthread.h
 
 FORMS += \

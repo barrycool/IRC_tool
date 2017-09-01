@@ -138,6 +138,7 @@ enum msg_t {
     START_SEND,         //0x0d
     STOP_LEARNING,      //0x0e
     START_LEARNING,     //0x0f
+    REPORT_SENDING_CMD, //0x10
     //SIRCS_CMD_MAX,
 };
 

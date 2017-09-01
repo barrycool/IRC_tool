@@ -123,11 +123,11 @@ void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
     }
 
 /*------add for debug----------*/
-        QString log = "send packet:";
+        QString log = "send packet:len=" +QString::number(len);
 
         for(uint8_t j = 0; j< len; j++)
         {
-            log += QString("%1 ").arg(buf[j]);
+            log += QString(" %1").arg(buf[j]);
         }
         qDebug() << log;
         output_log(log,0);
@@ -150,13 +150,6 @@ void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
     {
         sendcmd_timer.start(2000);
     }
-    if(frame->msg == UPGRADE_FINISH)
-    {
-        serial.close();
-        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
-
-    }
-
 }
 void MainWindow::sendcmdTimeout()
 {
@@ -245,8 +238,8 @@ void MainWindow::serial_receive_data()
         output_log("CRC32 err",0);
         return;
     }
-
-    //qDebug() << "receive packet:";
+/*
+    qDebug() << "receive packet:";
     log = "receive packet:";
     output_log(log,0);
 
@@ -256,18 +249,23 @@ void MainWindow::serial_receive_data()
     }
     qDebug() << log;
     output_log(log,0);
-
+*/
     if(frame->msg == CMD_NACK)
     {
         sendcmd_timer.stop();
-
+        if (frame->msg_parameter[0] == UPGRADE_START ||frame->msg_parameter[0] == SEND_UPGRADE_PACKET)
+        {
+            qDebug() <<"CMD_NACK of " << frame->msg_parameter[0];
+            emit cmdFailSignal();
+            return;
+        }
         if(resendCount >= FAIL_RETRY_TIMES)
         {
             //qDebug() << "NAK :cmd not handled correctly";
             qDebug("retry for %d times still NACK,quit!",FAIL_RETRY_TIMES);
             output_log("NAK :cmd not handled correctly",1);
             resendCount = 0;
-            emit cmdFailSignal();
+            //emit cmdFailSignal();
             return;
         }
         qDebug() <<"CMD_NACK,resend :" << resendCount;
@@ -290,6 +288,7 @@ void MainWindow::serial_receive_data()
         else if (frame->msg_parameter[0] == UPGRADE_START ||frame->msg_parameter[0] == SEND_UPGRADE_PACKET)
         {
             //qDebug() << "receive ack of " << frame->msg_parameter[0];
+            //Sleep(200);
             emit receiveAckSignal(frame->msg_parameter[0]);
         }
         else if (frame->msg_parameter[0] == REAL_TIME_SEND)
@@ -404,6 +403,13 @@ void MainWindow::serial_receive_data()
             ui->leStartRecordBut->setEnabled(true);
         }
 
+    }
+    else if (frame->msg == REPORT_SENDING_CMD)
+    {
+        logstr = "current sending cmd: " + QString::asprintf("%d\n", frame->msg_parameter[0]);
+        qDebug() <<logstr;
+        output_log(logstr,1);
+        ui->atScriptlistWidget->setCurrentRow(frame->msg_parameter[0]+1);
     }
     buf_len = 0;
 }
@@ -616,12 +622,20 @@ void MainWindow::on_actionFresh_triggered()
 
 void MainWindow::on_actionUpgrade_triggered()
 {
-
-    fupdiaglog = new UpgradeDialog(this);
+    //serial.close();
+    fupdiaglog = new UpgradeDialog(this,&serial);
 
     fupdiaglog->setWindowTitle("Upgrade");
-    fupdiaglog->show();//非模态
-    //diaglog->exec();//模态
+    this->connect(fupdiaglog,SIGNAL(rejected()),this,SLOT(returnfromUpgrade()));
+    //fupdiaglog->show();//非模态
+    fupdiaglog->exec();//模态
+
+}
+void MainWindow::returnfromUpgrade()
+{
+    qDebug() << "return from upgrade";
+    serial.close();
+    ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
 }
 void MainWindow::leSetIRDevice(int index)
 {
@@ -1049,7 +1063,7 @@ void MainWindow::set_IR_device(int index)
     set_IR_command_list();
     connect(ui->atDeviceCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_command_list);
 }
-
+int index = 0;
 void MainWindow::set_IR_command_list()
 {
     qDebug() << "set_IR_command_list";
@@ -1079,7 +1093,7 @@ void MainWindow::set_IR_command_list()
     //should add NEC
 
     IR_maps.clear();
-
+    index = 0;
     while(!in.atEnd()){
         line = in.readLine();
         if(line.contains(','))
@@ -1106,17 +1120,18 @@ void MainWindow::atIrPanel_slot()
 
 void MainWindow::setToKeyListWidget(QString line)
 {
-    QString IR_type = NULL;
+    QString IR_index = NULL;
     QString buttonName = NULL;
     QString str = NULL;
 
     QStringList list1 = line.split(',');
-    IR_type = list1.at(0);
+    IR_index = QString::number(index);
+    index++;
     //QByteArray ba = list1.at(1).toLatin1();
     buttonName = list1.at(1);//ba.data();
     qDebug() << "loadkeymap:buttonName " << buttonName;
 
-    str = IR_type.append("    ").append(buttonName/*QString(QLatin1String(buttonName))*/);
+    str = IR_index.append("     ").append(buttonName/*QString(QLatin1String(buttonName))*/);
     QListWidgetItem *item = new QListWidgetItem(str,ui->atCustomizeKeyListWidget);
     ui->atCustomizeKeyListWidget->addItem(item);
 }
@@ -1204,7 +1219,7 @@ void MainWindow::atReadPushButton_slot()
 {
     qDebug() << "atReadPushButton_slot:read current cmd list from mcu\n";
     atClearScriptWidget();
-    IR_items.clear();
+    //IR_items.clear();
 
 
     uint8_t buf[BUF_LEN];
@@ -1224,7 +1239,7 @@ void MainWindow::atReadPushButton_slot()
 void MainWindow::atCustomizeKeyListWidgetItemClicked_slot(QListWidgetItem* item)
 {
     QString str = item->text();
-    QStringList list1 = str.split(QRegularExpression("\\W+"), QString::SkipEmptyParts);
+    QStringList list1 = str.split("     ");
     //QByteArray ba = list1.at(1).toLatin1();
     QString buttonName = list1.at(1);//ba.data();
     ui->atButtonText->setText(/*QString(QLatin1String(*/buttonName);
@@ -1319,8 +1334,8 @@ void MainWindow::atAddItem2ScriptListWidget(int ir_type,QString button_name,int 
 
     QLabel *isLearningKey = new QLabel(islearning);
     QLabel *keyName = new QLabel(cmd_item);
-    QLineEdit *time = new QLineEdit(sdelaytime);
-    connect(time,SIGNAL(textEdited(const QString &text)),this,SLOT(textChanged_SLOT(const QString &text)));
+    QLabel *time = new QLabel(sdelaytime);
+    //connect(time,SIGNAL(textEdited(const QString &text)),this,SLOT(textChanged_SLOT(const QString &text)));
 
     hLayout->addWidget(isLearningKey);
     hLayout->addStretch(1);
@@ -1338,7 +1353,7 @@ void MainWindow::atAddItem2ScriptListWidget(int ir_type,QString button_name,int 
 void MainWindow::textChanged_SLOT(const QString &text)
 {
     qDebug() << "textChanged_SLOT :" << text;
-    int index = ui->atScriptlistWidget->currentRow()-1;
+    //int index = ui->atScriptlistWidget->currentRow()-1;
     //IR_items.at(index).delay_time = text.toInt();
 }
 void MainWindow::add_to_list(QString button_name,uint32_t delay)
@@ -1393,10 +1408,55 @@ void MainWindow::add_to_list(QString button_name,uint32_t delay)
 
     printIrItemInfo(IR_item);
     //step2: add to IR_item list
-    IR_items.append(IR_item);
+    //IR_items.append(IR_item);
 
     //step3: update widget
-    atAddItem2ScriptListWidget(IR_item.IR_type,button_name,IR_item.delay_time);
+    //atAddItem2ScriptListWidget(IR_item.IR_type,button_name,IR_item.delay_time);
+
+    qDebug() << "ui->atScriptlistWidget->currentRow()" << ui->atScriptlistWidget->currentRow() ;
+       qDebug() << "ui->atScriptlistWidget->count()" << ui->atScriptlistWidget->count() ;
+       int curRow = ui->atScriptlistWidget->currentRow();
+       if((ui->atScriptlistWidget->currentRow()==-1)
+               || (ui->atScriptlistWidget->currentRow()==0)
+               || ((ui->atScriptlistWidget->currentRow() + 1) == ui->atScriptlistWidget->count()))
+       {
+           IR_items.append(IR_item);
+           atAddItem2ScriptListWidget(IR_item.IR_type,button_name,IR_item.delay_time);
+           ui->atScriptlistWidget->setCurrentRow(0);
+       }
+       else
+       {
+           char tmpNameBuf[MAX_NAME_LEN];
+           atClearScriptWidgetOnly();
+           IR_items.insert(curRow,IR_item);
+           for(int i=0; i<IR_items.count(); i++)
+           {
+               switch(IR_items.at(i).IR_type)
+               {
+                   case IR_TYPE_SIRCS:
+                       memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_SIRCS.name,MAX_NAME_LEN);
+                       break;
+                   case IR_TYPE_NEC:
+                       memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_NEC.name,MAX_NAME_LEN);
+                       break;
+                   case IR_TYPE_RC6:
+                       memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_RC6.name,MAX_NAME_LEN);
+                       break;
+                   case IR_TYPE_RC5:
+                       memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_RC5.name,MAX_NAME_LEN);
+                       break;
+                   case IR_TYPE_JVC:
+                       memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
+                       break;
+                   case IR_TYPE_LEARNING:
+                       memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_learning.name,MAX_NAME_LEN);
+                       break;
+                   default:
+                       break;
+               }
+               atAddItem2ScriptListWidget(IR_items.at(i).IR_type,tmpNameBuf,IR_items.at(i).delay_time);
+           }
+       }
 }
 
 void MainWindow::atAddButton_slot()
@@ -1405,8 +1465,14 @@ void MainWindow::atAddButton_slot()
 //step1:add to listWidget
     QString str = ui->atCustomizeKeyListWidget->currentItem()->text();
 
-    QStringList list1 = str.split(QRegularExpression("\\W+"), QString::SkipEmptyParts);
-
+    QStringList list1 = str.split("     ");
+    if(ui->atScriptlistWidget->count() >=20 )
+    {
+        logstr = "Can not add more then 20 cmds!";
+        qDebug() << logstr;
+        output_log(logstr,1);
+        return;
+    }
     add_to_list(list1.at(1),ui->atDelayText->text().toInt());
 }
 
@@ -1443,7 +1509,23 @@ void MainWindow::atClearScriptWidget()
 
         }
     }
-    //IR_items.clear();
+    IR_items.clear();
+}
+void MainWindow::atClearScriptWidgetOnly()
+{
+    //qDebug() << "before cleared:atScriptlistWidget->count() = "<<ui->atScriptlistWidget->count();
+    int count = ui->atScriptlistWidget->count();
+    if (count > 1)
+    {
+        //int index = ui->atScriptlistWidget->currentRow();
+
+        for (int i = 1;i < count;i++)
+        {
+             //qDebug() << "remove index :" << i;
+            ui->atScriptlistWidget->removeItemWidget(ui->atScriptlistWidget->takeItem(1));
+
+        }
+    }
 }
 void MainWindow::atLoadscriptBut_slot()
 {
@@ -1966,7 +2048,13 @@ void MainWindow::leStartRecordButton_slot()
         buf[frame->data_len] = CRC8Software(buf, frame->data_len);
 
         sendCmd2MCU(buf,frame->data_len + 1);
-
+/*
+       //QMessageBox::information(this,"Guide","Please press the button on your RemoteController");
+       QMessageBox *messageBox=new QMessageBox(QMessageBox::Information,"Guide","Please press the button on your RemoteController",QMessageBox::Close,this);
+       messageBox->show();
+       connect(&set_cmd_list_timer,SIGNAL(timeout()),messageBox,SLOT(close()));
+       set_cmd_list_timer.start(1000);
+*/
         //open learning wave for debug
         if(ui->leDebugModeCheckBox->isChecked() && this->lw == NULL)
         {
@@ -2267,4 +2355,86 @@ void MainWindow::logSaveButton_slot()
     }
 
     logfile.close();
+}
+
+void MainWindow::on_atUpMove_clicked()
+{
+    qDebug() << "ui->atScriptlistWidget->currentRow()" << ui->atScriptlistWidget->currentRow() ;
+    qDebug() << "ui->atScriptlistWidget->count()" << ui->atScriptlistWidget->count() ;
+    int curRow = ui->atScriptlistWidget->currentRow();
+    if (curRow == -1 || curRow == 0 || curRow == 1 || IR_items.count() <= 1)
+        return;
+    IR_items.swap(curRow-1, curRow-2);
+
+    char tmpNameBuf[MAX_NAME_LEN];
+    atClearScriptWidgetOnly();
+    for(int i=0; i<IR_items.count(); i++)
+    {
+        switch(IR_items.at(i).IR_type)
+        {
+            case IR_TYPE_SIRCS:
+                memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_SIRCS.name,MAX_NAME_LEN);
+                break;
+            case IR_TYPE_NEC:
+                memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_NEC.name,MAX_NAME_LEN);
+                break;
+            case IR_TYPE_RC6:
+                memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_RC6.name,MAX_NAME_LEN);
+                break;
+            case IR_TYPE_RC5:
+                memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_RC5.name,MAX_NAME_LEN);
+                break;
+            case IR_TYPE_JVC:
+                memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
+                break;
+            case IR_TYPE_LEARNING:
+                memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_learning.name,MAX_NAME_LEN);
+                break;
+            default:
+                break;
+        }
+        atAddItem2ScriptListWidget(IR_items.at(i).IR_type,tmpNameBuf,IR_items.at(i).delay_time);
+    }
+    ui->atScriptlistWidget->setCurrentRow(curRow-1);
+}
+
+void MainWindow::on_atDownMove_clicked()
+{
+    qDebug() << "ui->atScriptlistWidget->currentRow()" << ui->atScriptlistWidget->currentRow() ;
+        qDebug() << "ui->atScriptlistWidget->count()" << ui->atScriptlistWidget->count() ;
+        int curRow = ui->atScriptlistWidget->currentRow();
+        if (curRow == -1 || curRow == 0 || IR_items.count() <= 1 || curRow == IR_items.count())
+            return;
+        IR_items.swap(curRow-1, curRow);
+
+        char tmpNameBuf[MAX_NAME_LEN];
+        atClearScriptWidgetOnly();
+        for(int i=0; i<IR_items.count(); i++)
+        {
+            switch(IR_items.at(i).IR_type)
+            {
+                case IR_TYPE_SIRCS:
+                    memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_SIRCS.name,MAX_NAME_LEN);
+                    break;
+                case IR_TYPE_NEC:
+                    memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_NEC.name,MAX_NAME_LEN);
+                    break;
+                case IR_TYPE_RC6:
+                    memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_RC6.name,MAX_NAME_LEN);
+                    break;
+                case IR_TYPE_RC5:
+                    memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_RC5.name,MAX_NAME_LEN);
+                    break;
+                case IR_TYPE_JVC:
+                    memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
+                    break;
+                case IR_TYPE_LEARNING:
+                    memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_learning.name,MAX_NAME_LEN);
+                    break;
+                default:
+                    break;
+            }
+            atAddItem2ScriptListWidget(IR_items.at(i).IR_type,tmpNameBuf,IR_items.at(i).delay_time);
+        }
+        ui->atScriptlistWidget->setCurrentRow(curRow+1);
 }
