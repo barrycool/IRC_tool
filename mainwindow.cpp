@@ -1457,6 +1457,7 @@ void MainWindow::add_to_list(QString button_name,uint32_t delay)
                atAddItem2ScriptListWidget(IR_items.at(i).IR_type,tmpNameBuf,IR_items.at(i).delay_time);
            }
        }
+       ui->atScriptlistWidget->setCurrentRow(curRow+1);
 }
 
 void MainWindow::atAddButton_slot()
