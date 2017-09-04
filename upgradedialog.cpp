@@ -17,16 +17,21 @@ int upgrade_flag = 0;
 
 bool check_valid_upgrade_bin_version(QString fileName,uint32_t &version, uint32_t &checkSum);
 
-UpgradeDialog::UpgradeDialog(QWidget *parent,QSerialPort *port/*QString portName8*/) :
+UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available) :
     QDialog(parent),
     ui(new Ui::UpgradeDialog)
 {
     ui->setupUi(this);
     ui->upProgressBar->hide();
     //serial = port;
+
+    currentMcuVersion = current;
+    availableMcuVersion = available;
+    ui->upCurrentlineEdit->setText(QString::number(currentMcuVersion));
+    ui->upAvailablelineEdit->setText(QString::number(availableMcuVersion));
+
     QObject::connect(ui->upUpgradeButton,SIGNAL(clicked()),this,SLOT(upUpgradeButton_slot()));
     //QObject::connect(ui->upCancelButton,SIGNAL(clicked()),this,SLOT(upCancelButton_slot()));
-    //QObject::connect(ui->upCheckUpdateButton,SIGNAL(clicked()),this,SLOT(checkForMcuUpgrade()));
     QObject::connect(ui->upFreshAvailableButton,SIGNAL(clicked()),this,SLOT(checkForMcuUpgrade()));
     QObject::connect(ui->upFreshCurrentButton,SIGNAL(clicked()),this,SLOT(SendCmd2GetCurrentVersion()));
     QObject::connect(ui->upChooseLocalFileButton,SIGNAL(clicked()),this,SLOT(upChooseLocalFileButton_slot()));
@@ -37,19 +42,28 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,QSerialPort *port/*QString portName
 
     connect(parent,SIGNAL(cmdFailSignal()),this,SLOT(cmdFailSlot()));
     connect(parent,SIGNAL(updateVersionSignal(IR_MCU_Version_t *)),this,SLOT(updateCurrentVersionSlot(IR_MCU_Version_t *)));
-    //connect(this,SIGNAL(signalDownloadFinished()),parent,SLOT(analysisVersionfromBin()));
+
     cmdSemaphore = new QSemaphore(1);
 
-    upWebLinklable = new QLabel( "<a href = http://www.mediatek.inc >www.mediatek.inc</a>", this );
+    upWebLinklable = new QLabel( "<a href = https://www.mediatek.com/ >www.mediatek.com</a>", this );
     QRect r1(340, 160, 131, 20);
     upWebLinklable->setGeometry(r1);
     //upWebLinklable->setParent(ui);
     QObject::connect(upWebLinklable,SIGNAL(linkActivated(QString)),this,SLOT(openUrl_slot(QString)));
 
     //check if can access the internet
-    //QHostInfo::lookupHost("www.baidu.com",this,SLOT(onLookupHost(QHostInfo)));
-    //dstBinFilePath = qApp->applicationDirPath().append("\\UpgradeBin");
-    ui->upUpgradeButton->setDisabled(true);
+    QHostInfo::lookupHost("www.baidu.com",this,SLOT(onLookupHost(QHostInfo)));
+
+    if(currentMcuVersion >= availableMcuVersion)
+    {
+        ui->upUpgradeButton->setDisabled(true);
+        ui->upStatusText->setText("No need to upgrade!");
+    }
+    else
+    {
+        ui->upUpgradeButton->setDisabled(false);
+        ui->upStatusText->setText("Please press upgrade button!");
+    }
     //connect(&serial, SIGNAL(readyRead()), this, SLOT(serial_receive_ack()));
     //getPortInfoByName(portName);
 }
@@ -63,93 +77,21 @@ UpgradeDialog::~UpgradeDialog()
     delete ui;
 }
 
-/*
+
 void UpgradeDialog::onLookupHost(QHostInfo host)
 {
-
     if (host.error() != QHostInfo::NoError)
     {
         qDebug() << "Lookup failed:" << host.errorString();
-        isNetworkAccessable = true;
+        isNetworkAccessable = false;
+        ui->upStatusText->append("Network is not accessible");
     }
     else{
-        isNetworkAccessable = false;
+        isNetworkAccessable = true;
+        ui->upStatusText->append("Network is accessible");
     }
-
 }
-*/
-/*
-//请求完成 文件下载成功
-void UpgradeDialog::httpDowloadFinished(){
-    //刷新文件
-    dstbinfile->flush();
-    dstbinfile->close();
-    dstbinfile=0;
-    isUpgradefileDownloaded = true;
-    emit signalDownloadFinished(); //send signal to analysis version from bin file
-}
-*/
-/*
-void UpgradeDialog::doDownload(QUrl fileURL,QFile *dstFile)
-{
-    qDebug() << "doDownload30";
-    //int total = -1;
-    QNetworkAccessManager * ma = new QNetworkAccessManager;
-    QNetworkRequest headReq(fileURL);
-    //qDebug()<<"获取下载文件的大小......";
-    headReq.setRawHeader("User-Agent", "");  //Content-Length
 
-    QNetworkReply*  headReply = NULL;
-    bool connectError = false;
-    int tryTimes = 1;
-    //如果失败,连接尝试3次;
-    do{
-//        qDebug()<<"正在进行"<<4 - tryTimes<<"次连接尝试...";
-        connectError = false;
-        headReply =  ma->head(headReq);
-        if(!headReply)
-          {
-            connectError = true;
-            continue;
-          }
-        QEventLoop loop;
-        //connect(headReply, SIGNAL(finished()), &loop, SLOT(quit()));
-        loop.exec();
-        connectError = (headReply->error() != QNetworkReply::NoError);
-//        if(connectError)
-//            qDebug()<<"连接失败!";
-        headReply->deleteLater();
-      } while (connectError && --tryTimes);
-
-//    qDebug() << headReply << "headReply^^^^^^^^^^^^^^^^^^^^^^^^^^";
-    int statusCode = headReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
-    if(statusCode == 302)
-    {
-        QUrl newUrl = headReply->header(QNetworkRequest::LocationHeader).toUrl();
-        if(newUrl.isValid())
-          {
-//            qDebug()<<"重定向："<<newUrl;
-            fileURL = newUrl.toString();
-            return doDownload(fileURL);
-          }
-    }
-    else
-    {
-        binfileLen = headReply->header(QNetworkRequest::ContentLengthHeader).toLongLong();
-        qDebug() << "binFile len:" << binfileLen;
-
-        HttpThread *thread=new HttpThread(fileURL,dstFile,binfileLen);
-
-        //connect(thread,SIGNAL(progressChanged(long)),this,SLOT(progressChanged(long)));
-        connect(thread,SIGNAL(finish(bool)),this,SLOT(httpDowloadFinished(bool)));
-        thread->start();
-     }
-
-    headReply->deleteLater();
-    ma->deleteLater();
-}
-*/
 void UpgradeDialog::openUrl_slot(QString str)
 {
     QDesktopServices::openUrl(QUrl(str));
@@ -176,72 +118,54 @@ void UpgradeDialog::SendCmd2GetCurrentVersion()
     emit getVersionSignal();
 }
 
-/*
-void UpgradeDialog::analysisVersionfromBin()
-{
-    //analysis version from bin
-    int  versionYear = 2017;
-    int  versionMonth = 8;
-    int  versionDay = 24;
-    QString logstr;
-    QString tmp = QString::number(versionYear).append("_").append(QString::number(versionMonth)).append("_").append(QString::number(versionDay));
-    ui->upAvailablelineEdit->setText(tmp);
-
-    if(versionYear > currentMcuVersionYear
-       || (versionYear == currentMcuVersionYear && versionMonth > currentMcuVersionMonth)
-       || (versionYear == currentMcuVersionYear && versionMonth == currentMcuVersionMonth && versionDay > currentMcuVersionDay))
-    {
-        logstr ="There is new version to upgrade,press Upgrade button to start";
-        ui->upStatusText->setText(logstr);
-        ui->upUpgradeButton->setEnabled(true);
-    }
-    else
-    {
-        ui->upStatusText->setText("It's latest version,no need to upgrade");
-        ui->upUpgradeButton->setDisabled(true);
-        qDebug() <<"no need to upgrade!";
-    }
-}
-*/
 void UpgradeDialog::checkForMcuUpgrade()
 {
     //need to download upgrade files from github,and get the version
         QString srcBinFilePath;
 
-    //step 1:download bin
+
         if(isNetworkAccessable)
         {
-            //download from github
-            srcBinFilePath = "https://github.com/barrycool/IR_stm32f103VE/blob/master/IR_stm32f103";
+            //step 1 :download from github
+            srcBinFilePath = "https://github.com/barrycool/bin/raw/master/IR_MCU_upgrade_bin/IR_stm32f103C8.bin";
+            QString cmd = "wget " + srcBinFilePath;
+            system(cmd.toLatin1().data());
 
-            QUrl  srcBinFileUrl = QUrl(srcBinFilePath);
-            QString filename = srcBinFileUrl.fileName();
-            dstBinFilePath = dstBinFilePath.append("\\filename");
-            dstbinfile = new QFile;
-            dstbinfile->setFileName(dstBinFilePath);
-            //doDownload(srcBinFileUrl,dstbinfile);
-
-            /*
-
-            dstbinfile->setFileName(dstBinFileName);
-            dstbinfile->open((QIODevice::WriteOnly));
-            avatorManager = new QNetworkAccessManager(this);
-            //get方式请求 如需加密用post
-            avatorReply = avatorManager->get(QNetworkRequest(srcBinFileUrl));
-            if(!avatorReply)
+            //step 2 :analysis version
+            uint32_t availableVersion;
+            uint32_t checksum;
+            QString logstr;
+            QString appPath = qApp->applicationDirPath();
+            QString filename = appPath.remove("/debug").append("\\IR_stm32f103C8.bin");
+            if (filename.size() != 0)
             {
-                qDebug() << "network error,get avatorReply fail ";
-                return;
+                qDebug () << filename;
+                if (check_valid_upgrade_bin_version(filename, availableVersion, checksum))
+                {
+                    QString tmp = QString::number(availableVersion,16);
+                    availableMcuVersion = tmp.toInt();
+
+                    if(availableMcuVersion <= currentMcuVersion)
+                    {
+                        logstr ="currentMcuVersion is the latest version,no need to upgrade";
+                        qDebug() << logstr;
+                        ui->upStatusText->append(logstr);
+                        ui->upUpgradeButton->setEnabled(false);
+                    }
+                    else
+                    {
+                        logstr = "Newer MCU version is available,Please Upgrade";
+                        qDebug() << logstr;
+                        ui->upStatusText->append(logstr);
+                        ui->upUpgradeButton->setEnabled(true);
+                    }
+                }
             }
-            connect(avatorReply, SIGNAL(readyRead()), this, SLOT(httpDowload()));
-            //QObject::connect(avatorReply,SIGNAL(readyRead()),this,SLOT(httpDowload()));//数据写入
-            QObject::connect(avatorReply,SIGNAL(finished()),this,SLOT(httpDowloadFinished()));//请求完成
-            */
         }
         else
         {
             //get from local disk
-            QString str = "Your Network is not avilable,,Do you want to upgrade from Local file?";
+            QString str = "Your Network is not accessible , Do you want to upgrade from Local file?";
             QMessageBox::StandardButton reply = QMessageBox::question(this, "No Network ", str, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
             if(reply == QMessageBox::Yes)
             {
@@ -257,25 +181,29 @@ void UpgradeDialog::checkForMcuUpgrade()
 }
 void UpgradeDialog::upChooseLocalFileButton_slot()
 {
+    uint32_t availableVersion;
     uint32_t checksum;
     QString logstr;
     QString path = QFileDialog::getOpenFileName(this, "choose upgrade file", "", "bin file(*.bin)");
     dstBinFilePath = path;
     if (path.size() != 0)
     {
-        if (check_valid_upgrade_bin_version(path, availableMcuVersion, checksum))
+        if (check_valid_upgrade_bin_version(path, availableVersion, checksum))
         {
+            QString tmp = QString::number(availableVersion,16); //10进制转成16进制
+            availableMcuVersion = tmp.toInt();
+
             if(availableMcuVersion <= currentMcuVersion)
             {
                 logstr ="currentMcuVersion is newer than local upgrade file,no need to upgrade";
                 qDebug() << logstr;
-                ui->upStatusText->setText(logstr);
+                ui->upStatusText->append(logstr);
             }
             else
             {
                 logstr = "local upgrade file is newer than currentMcuVersion,Please upgrade";
                 qDebug() << logstr;
-                ui->upStatusText->setText(logstr);
+                ui->upStatusText->append(logstr);
             }
 
             ui->upAvailablelineEdit->setText(QString::asprintf("%X", availableMcuVersion));
@@ -323,7 +251,7 @@ void UpgradeDialog::upUpgradeButton_slot()
     ui->upCancelButton->setDisabled(true);
 
     qDebug() << "total_file_length" << total_file_length;
-    ui->upStatusText->setText("Start Upgrade");
+    ui->upStatusText->append("Start Upgrade");
 
     ui->upProgressBar->setValue(0);
 

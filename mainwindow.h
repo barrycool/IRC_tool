@@ -32,6 +32,7 @@
 #include <QThread>
 #include <QSettings>
 #include <windows.h>
+#include "upgradethread.h"
 
 namespace Ui {
 class MainWindow;
@@ -90,6 +91,7 @@ private slots:
     void upCancelButton_slot();
     //void openUrl_slot(QString);
     void getCurrentMcuVersion();
+    void httpDowloadFinished(bool flag);
     /*-------lianlian add for Learningkey----------------*/
     void leCustomizeButton_slot();
     void leReturnButton_slot();
@@ -182,7 +184,9 @@ private:
     /*---------lianlian add for MCU upgrade---------------*/
     LearningWave *lw;
     UpgradeDialog *fupdiaglog;
-
+    UpgradeThread *upgradethred;
+    uint32_t currentMcuVersion;
+    uint32_t availableMcuVersion;
     void printIrItemInfo(IR_item_t ir_item);
 
     void set_IR_protocol();

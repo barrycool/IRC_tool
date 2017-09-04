@@ -7,6 +7,7 @@
 QT       += core gui
 QT       += serialport
 QT       += charts sql
+QT       += network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -36,7 +37,7 @@ SOURCES += \
     learningwave.cpp \
     upgradedialog.cpp \
     ir_learning.cpp \
-    httpthread.cpp
+    upgradethread.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -47,7 +48,7 @@ HEADERS += \
     learningwave.h \
     upgradedialog.h \
     ir_learning.h \
-    httpthread.h
+    upgradethread.h
 
 FORMS += \
         mainwindow.ui \

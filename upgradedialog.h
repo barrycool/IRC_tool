@@ -16,10 +16,11 @@
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
 //#include "upgrade.h"
-//#include <QtNetwork/QHostInfo>
+#include <QtNetwork/QHostInfo>
 //#include <QtNetwork/QNetworkAccessManager>
 #include <windows.h>
 
+extern bool check_valid_upgrade_bin_version(QString fileName,uint32_t &version, uint32_t &checkSum);
 namespace Ui {
 class UpgradeDialog;
 }
@@ -29,7 +30,7 @@ class UpgradeDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit UpgradeDialog(QWidget *parent,QSerialPort *port/*QString portName*/);
+    explicit UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available);
     ~UpgradeDialog();
 
 signals:
@@ -44,10 +45,7 @@ private slots:
     void ackReceivedSlot(int);
     void cmdFailSlot();
     void openUrl_slot(QString);
-    //void onLookupHost(QHostInfo host);
-    //void httpDowload();
-    //void httpDowloadFinished();
-    //void analysisVersionfromBin();
+    void onLookupHost(QHostInfo host);
     void upChooseLocalFileButton_slot();
     void upUpgradeButton_slot();
 
@@ -66,13 +64,7 @@ private:
     void sendUpgradeBinPacket();
 
     void doDownload(QUrl fileURL,QFile *dstFile);
-    //QNetworkReply *avatorReply;
-    //QNetworkAccessManager *avatorManager;
-
     QString dstBinFilePath;
-    //QSerialPort *serial;
-
-
 };
 
 #endif // UPGRADEDIALOG_H

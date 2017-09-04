@@ -30,6 +30,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->actionIRWave->setDisabled(true);
     //ui->leStackedWidget->setCurrentIndex(0);
     ui->atStackedWidget->setCurrentIndex(1);
+    currentMcuVersion = 0;
+    availableMcuVersion = 0;
+
+    upgradethred = new UpgradeThread();
+    connect(upgradethred,SIGNAL(finish(bool)),this,SLOT(httpDowloadFinished(bool)));
+    connect(upgradethred,SIGNAL(getVersionSignal()),this,SLOT(getCurrentMcuVersion()));
+    upgradethred->start();
 
     portBox = new QComboBox;
     ui->mainToolBar->insertWidget(ui->actionOpenUart,portBox);
@@ -52,7 +59,7 @@ MainWindow::MainWindow(QWidget *parent) :
     logstr = "get keyMap Dir Path :";
     logstr.append(keyMapDirPath);
     qDebug() << logstr;
-    output_log(logstr,1);
+    output_log(logstr,0);
 
     //for Aging Test SubWindow
     loadInsetIrMapTable();
@@ -93,6 +100,44 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+void MainWindow::httpDowloadFinished(bool flag)
+{
+    output_log("upgrade bin download finished!",1);
+    uint32_t availableVersion;
+    uint32_t checksum;
+    QString appPath = qApp->applicationDirPath();
+    QString filename = appPath.remove("/debug").append("\\IR_stm32f103C8.bin");
+    if (filename.size() != 0)
+    {
+        qDebug () << filename;
+        if (check_valid_upgrade_bin_version(filename, availableVersion, checksum))
+        {
+            QString tmp = QString::number(availableVersion,16);
+            availableMcuVersion = tmp.toInt();
+            output_log("availableMcuVersion is ",1);
+            output_log(QString::number(availableMcuVersion),1);
+            if(availableMcuVersion <= currentMcuVersion)
+            {
+                logstr ="currentMcuVersion is the latest version,no need to upgrade";
+                qDebug() << logstr;
+                output_log(logstr,1);
+            }
+            else
+            {
+                logstr = "Newer MCU version is available,Do you want to upgrade to the latest version?";
+                QMessageBox::StandardButton reply = QMessageBox::question(this, "Upgrade Available ", logstr, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+                if(reply == QMessageBox::Yes)
+                {
+                     on_actionUpgrade_triggered();
+                     return;
+                }
+                qDebug() << logstr;
+                output_log(logstr,1);
+            }
+        }
+    }
+    upgradethred->quit();
 }
 
 /*--------Lianlian add for cmd send nack and resend--------*/
@@ -369,6 +414,13 @@ void MainWindow::serial_receive_data()
         IR_MCU_Version_t mcuVersion;
 
         memcpy(&mcuVersion, frame->msg_parameter, sizeof(IR_MCU_Version_t));
+        QString currentVersionStr = QString::asprintf("%02x%02x%02x%02x",
+                                                     mcuVersion.year_high, mcuVersion.year_low,
+                                                     mcuVersion.month, mcuVersion.day);
+
+        currentMcuVersion = currentVersionStr.toInt();
+        output_log("currentMcuVersion is ",1);
+        output_log(QString::number(currentMcuVersion),1);
 
         emit updateVersionSignal(&mcuVersion);
     }
@@ -485,6 +537,7 @@ void MainWindow::portChanged(int index)
         {
             serial.setPort(info);
             serial.close();//close it first
+            upgradethred->serialSetReady(false);
             Sleep(200);
             break;
         }
@@ -496,6 +549,7 @@ void MainWindow::portChanged(int index)
         ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_green.png"));
         serial.setBaudRate(QSerialPort::Baud115200);
         serial.setFlowControl(QSerialPort::NoFlowControl);
+        upgradethred->serialSetReady(true);
     }
     else
     {
@@ -538,6 +592,7 @@ void MainWindow::on_actionOpenUart_triggered()
         qDebug() << "serial" << portBox->currentText() <<"is open,close it";
         serial.close();
         ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+        upgradethred->serialSetReady(false);
         logstr = "serialPort:";
         logstr.append(portBox->currentText()).append("is closed");
         output_log(logstr,1);
@@ -552,7 +607,7 @@ void MainWindow::on_actionOpenUart_triggered()
             //serial.setPortName(portBox->currentText());
             serial.setBaudRate(QSerialPort::Baud115200);
             serial.setFlowControl(QSerialPort::NoFlowControl);
-
+            upgradethred->serialSetReady(true);
             logstr = "serialPort:";
             logstr.append(portBox->currentText()).append("is opened");
             output_log(logstr,1);
@@ -623,7 +678,7 @@ void MainWindow::on_actionFresh_triggered()
 void MainWindow::on_actionUpgrade_triggered()
 {
     //serial.close();
-    fupdiaglog = new UpgradeDialog(this,&serial);
+    fupdiaglog = new UpgradeDialog(this,currentMcuVersion,availableMcuVersion);
 
     fupdiaglog->setWindowTitle("Upgrade");
     this->connect(fupdiaglog,SIGNAL(rejected()),this,SLOT(returnfromUpgrade()));
@@ -855,19 +910,6 @@ void MainWindow::sendCmdforUpgradeSlot(uint8_t *buf,int len)
 
 void MainWindow::getCurrentMcuVersion()
 {
-   // currentMcuVersionYear = 2017;
-   // currentMcuVersionMonth = 07;
-    //currentMcuVersionDay = 07;
-/*
-    IR_MCU_Version_t version;
-    version.year_high = 20;
-    version.year_low = 17;
-    version.month = 07;
-    version.day = 07;
-
-    emit updateVersionSignal(&version);
-    return; //just for test
-*/
     if(!serial.isOpen())
     {
         //QMessageBox::warning(this,"Send Error","Please Open Serial Port First!\n");
@@ -1170,42 +1212,7 @@ void MainWindow::saveToIrMaps(QString line)
     IR_maps.append(IR_map);
 
 }
-/*
-void MainWindow::atLoadKeyMapButton_slot()
-{
-    QString fileDir = keyMapDirPath;
-    QDir *dir = new QDir(fileDir);
-    dir->setCurrent(keyMapDirPath);
-    //QString fileName = fileDir.append("/").append(ui->atCustomerCombox->currentText()).append("_").append(ui->atDeviceCombox->currentText()).append(".ini");
-    QString fileName = "sony_BDP.ini"; //just for test
-    //QFile *keyFile = new QFile(fileName);
-    QFile keyFile(fileName);  //需手动删除,以免内存泄漏
-    //keyFile->setFileName(fileName);
-    if(!keyFile.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        qDebug() << "read file " << fileName << "fail!\n";
-        QMessageBox::critical(this,"Load Error","Open file " + fileName +"Error");
-        return;
-    }
-    QTextStream in(&keyFile);
 
-    while (!in.atEnd()) {
-        QString line = in.readLine();
-        if(line.contains(','))
-        {
-            setToKeyListWidget(line);
-            saveToIrMaps(line);
-        }
-
-    }
-    keyFile.close();
-    //delete &keyFile;
-    QString tmplog ="load keymap file:";
-    tmplog.append(fileName).append("success.");
-    output_log(tmplog);
-
-}
-*/
 /*
  * QString to char *
  * const char *c_str2 = str2.toLatin1().data();
@@ -1463,6 +1470,13 @@ void MainWindow::add_to_list(QString button_name,uint32_t delay)
 void MainWindow::atAddButton_slot()
 {
 
+    if(ui->atCustomizeKeyListWidget->currentRow()== -1)
+    {
+        qDebug()<< "No key has been chosen!";
+        //output_log(logstr,1);
+        //return;
+        ui->atCustomizeKeyListWidget->setCurrentRow(0);
+    }
 //step1:add to listWidget
     QString str = ui->atCustomizeKeyListWidget->currentItem()->text();
 
@@ -2232,12 +2246,7 @@ void MainWindow::leSaveKeymapButton_slot()
     keymapfile->close();
     delete keymapfile;  //需手动删除,以免内存泄漏
 
-    //QString oldCus = ui->atCustomerCombox->currentText(); //backup last selection
-   // QString oldDev = ui->atDeviceCombox->currentText();//backup
-
     loadInsetIrMapTable();
-    //ui->atCustomerCombox->setCurrentText(oldCus);
-    //ui->atDeviceCombox->setCurrentText(oldDev);
 
     QMessageBox::information(this,"Save Success","Save Key map to file:" + filename);
     leClearButton_slot();
