@@ -15,10 +15,11 @@ void UpgradeThread::run()
     emit getVersionSignal();
 
     QString appPath = qApp->applicationDirPath();
-    QString fileDir = appPath.append("\\upgrade_test_bin");
-    QDir *dir = new QDir(fileDir);
-    dir->setCurrent(fileDir);
-    QFile binFile("IR_stm32f103C8.bin");
+    QString fileDir = appPath.remove("/debug").append("/IR_stm32f103C8.bin");
+    //QDir *dir = new QDir(appPath);
+    //dir->setCurrent(appPath);
+    qDebug() << fileDir;
+    QFile binFile(fileDir);
     if(binFile.exists())
     {
         qDebug() << "IR_stm32f103C8.bin exsit,delete it first";

@@ -101,13 +101,17 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
+extern bool isUpgradefileDownloaded;
 void MainWindow::httpDowloadFinished(bool flag)
 {
     output_log("upgrade bin download finished!",1);
     uint32_t availableVersion;
     uint32_t checksum;
     QString appPath = qApp->applicationDirPath();
-    QString filename = appPath.remove("/debug").append("\\IR_stm32f103C8.bin");
+    QString filename = appPath.remove("/debug").append("/IR_stm32f103C8.bin");
+
+    currentMcuVersion = currentMcuVersion -1; //just for test
+
     if (filename.size() != 0)
     {
         qDebug () << filename;
@@ -117,6 +121,9 @@ void MainWindow::httpDowloadFinished(bool flag)
             availableMcuVersion = tmp.toInt();
             output_log("availableMcuVersion is ",1);
             output_log(QString::number(availableMcuVersion),1);
+
+            isUpgradefileDownloaded = 1;
+
             if(availableMcuVersion <= currentMcuVersion)
             {
                 logstr ="currentMcuVersion is the latest version,no need to upgrade";
@@ -2257,7 +2264,7 @@ void MainWindow::leSaveKeymapButton_slot()
 
 void MainWindow::on_actionUser_Manual_triggered()
 {
-    QDesktopServices::openUrl(QUrl("http://wiki.mediatek.inc/display/HBGSMTeam/BDP+Software+Process+Flow"));
+    QDesktopServices::openUrl(QUrl("http://wiki.mediatek.inc/pages/viewpage.action?pageId=335054467"));
     //openUrl_slot("http://wiki.mediatek.inc/display/HBGSMTeam/BDP+Software+Process+Flow");
 }
 

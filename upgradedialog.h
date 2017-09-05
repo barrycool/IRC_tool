@@ -63,7 +63,7 @@ private:
     void sendUpgradeFinishPacket();
     void sendUpgradeBinPacket();
 
-    void doDownload(QUrl fileURL,QFile *dstFile);
+    //void doDownload(QUrl fileURL,QFile *dstFile);
     QString dstBinFilePath;
 };
 

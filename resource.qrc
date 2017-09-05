@@ -91,5 +91,6 @@
         <file>resource-icon/turquoise_button.png</file>
         <file>resource-icon/updater.png</file>
         <file>resource-icon/utilities-system-monitor.png</file>
+        <file>resource-icon/MIT smart ir logo.png</file>
     </qresource>
 </RCC>
