@@ -142,18 +142,29 @@ void UpgradeDialog::checkForMcuUpgrade()
 
         if(isNetworkAccessable)
         {
-            //step 1 :download from github
+
+            //step 1 :delete old bin
+            QString appPath = qApp->applicationDirPath();
+            QString filename = appPath.remove("/debug").append("\\IR_stm32f103C8.bin");
+            QFile binFile(filename);
+            ui->upStatusText->append(filename);
+            if(binFile.exists())
+            {
+                qDebug() << "IR_stm32f103C8.bin exsit,delete it first";
+                ui->upStatusText->append("IR_stm32f103C8.bin exsit,delete it first");
+                QFile::remove(filename);
+            }
+            //step 2 :download new bin from github
             srcBinFilePath = "https://github.com/barrycool/bin/raw/master/IR_MCU_upgrade_bin/IR_stm32f103C8.bin";
             QString cmd = "wget " + srcBinFilePath;
             system(cmd.toLatin1().data());
 
-            //step 2 :analysis version
+            //step 3 :analysis version
             uint32_t availableVersion;
             uint32_t checksum;
             QString logstr;
-            QString appPath = qApp->applicationDirPath();
-            QString filename = appPath.remove("/debug").append("\\IR_stm32f103C8.bin");
-            if (filename.size() != 0)
+
+            if (binFile.size() != 0)
             {
                 qDebug () << filename;
                 if (check_valid_upgrade_bin_version(filename, availableVersion, checksum))
@@ -543,4 +554,9 @@ bool check_valid_upgrade_bin_version(QString fileName,uint32_t &version, uint32_
     version = upgrade_bin_tailer.upgrade_version;
     fclose(bin_file);
     return true;
+}
+
+void UpgradeDialog::on_upClear_clicked()
+{
+    ui->upStatusText->clear();
 }

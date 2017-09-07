@@ -109,7 +109,7 @@ void MainWindow::httpDowloadFinished(bool flag)
     uint32_t checksum;
     QString appPath = qApp->applicationDirPath();
     QString filename = appPath.remove("/debug").append("/IR_stm32f103C8.bin");
-
+    output_log(filename,1);
     //currentMcuVersion = currentMcuVersion -1; //just for test
 
     if (filename.size() != 0)

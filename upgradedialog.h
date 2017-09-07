@@ -49,6 +49,8 @@ private slots:
     void upChooseLocalFileButton_slot();
     void upUpgradeButton_slot();
 
+    void on_upClear_clicked();
+
 private:
     Ui::UpgradeDialog *ui;
 

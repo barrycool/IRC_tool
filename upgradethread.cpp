@@ -23,7 +23,7 @@ void UpgradeThread::run()
     if(binFile.exists())
     {
         qDebug() << "IR_stm32f103C8.bin exsit,delete it first";
-        QFile::remove("IR_stm32f103C8.bin");
+        QFile::remove(fileDir);
     }
 
     QString srcBinFilePath = "https://github.com/barrycool/bin/raw/master/IR_MCU_upgrade_bin/IR_stm32f103C8.bin";
