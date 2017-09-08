@@ -30,15 +30,17 @@ void UpgradeThread::run()
     QString cmd = "wget " + srcBinFilePath;
     system(cmd.toLatin1().data());
 
+    emit finish(true);
+/*
     while(binFile.open(QIODevice::ReadOnly))
     {
         qDebug() << "Download finished";
         binFile.close();
         //QFile::remove("IR_stm32f103C8.bin");
-        emit finish(true);
+
         return;
     }
-
+*/
 }
 
 void UpgradeThread::serialSetReady(bool isReady)

@@ -2,6 +2,7 @@
 #include "ui_upgradedialog.h"
 bool isUpgradefileDownloaded = 0;
 static bool isNetworkAccessable = 0;
+//static bool needUpgradeTool = 0;
 QFile *dstbinfile;
 
 #define VALID_UPGRADE_FLAG 0xA55AA55A
@@ -29,11 +30,15 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
     availableMcuVersion = available;
     ui->upCurrentlineEdit->setText(QString::number(currentMcuVersion));
     ui->upAvailablelineEdit->setText(QString::number(availableMcuVersion));
+    if(availableMcuVersion>0)
+    {
+        isUpgradefileDownloaded = 1;
+    }
 
     dstBinFilePath.resize(0);
 
     QObject::connect(ui->upUpgradeButton,SIGNAL(clicked()),this,SLOT(upUpgradeButton_slot()));
-    //QObject::connect(ui->upCancelButton,SIGNAL(clicked()),this,SLOT(upCancelButton_slot()));
+    QObject::connect(ui->upCancelButton,SIGNAL(clicked()),this,SLOT(upCancelButton_slot()));
     QObject::connect(ui->upFreshAvailableButton,SIGNAL(clicked()),this,SLOT(checkForMcuUpgrade()));
     QObject::connect(ui->upFreshCurrentButton,SIGNAL(clicked()),this,SLOT(SendCmd2GetCurrentVersion()));
     QObject::connect(ui->upChooseLocalFileButton,SIGNAL(clicked()),this,SLOT(upChooseLocalFileButton_slot()));
@@ -58,7 +63,9 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
 
     if(currentMcuVersion >= availableMcuVersion)
     {
-        ui->upUpgradeButton->setDisabled(true);
+        //just for test
+        //ui->upUpgradeButton->setDisabled(true);
+
         ui->upStatusText->setText("No need to upgrade!");
     }
     else
@@ -167,11 +174,12 @@ void UpgradeDialog::checkForMcuUpgrade()
             if (binFile.size() != 0)
             {
                 qDebug () << filename;
+                isUpgradefileDownloaded = true;
                 if (check_valid_upgrade_bin_version(filename, availableVersion, checksum))
                 {
                     QString tmp = QString::number(availableVersion,16);
                     availableMcuVersion = tmp.toInt();
-
+                    ui->upAvailablelineEdit->setText(tmp);
                     if(availableMcuVersion <= currentMcuVersion)
                     {
                         logstr ="currentMcuVersion is the latest version,no need to upgrade";
@@ -453,6 +461,17 @@ void UpgradeDialog::cmdFailSlot()
   //ui->upUpgradeButton->setDisabled(true);
   QMessageBox::critical(this,"Upgrade fail","Upgrade fail,Re-Plug usb2serial and try again!");
 
+}
+void UpgradeDialog::upCancelButton_slot()
+{
+    if(ui->upCancelButton->text() == "Finish")
+    {
+        emit UpgradeRejected(1,availableMcuVersion);
+    }
+    else if(ui->upCancelButton->text() == "Cancel")
+    {
+        emit UpgradeRejected(0,availableMcuVersion);
+    }
 }
 
 typedef uint32_t u32;

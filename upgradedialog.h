@@ -37,6 +37,7 @@ signals:
     getVersionSignal();
     sendCmdSignal(uint8_t* , int);
     signalDownloadFinished();
+    UpgradeRejected(bool,uint32_t);
 
 private slots:
     void checkForMcuUpgrade();
@@ -48,7 +49,7 @@ private slots:
     void onLookupHost(QHostInfo host);
     void upChooseLocalFileButton_slot();
     void upUpgradeButton_slot();
-
+    void upCancelButton_slot();
     void on_upClear_clicked();
 
 private:

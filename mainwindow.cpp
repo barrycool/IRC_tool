@@ -40,8 +40,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     portBox = new QComboBox;
     ui->mainToolBar->insertWidget(ui->actionOpenUart,portBox);
-    settings = new QSettings("Mediatek","IRC_Tool");
+    settings = new QSettings("Mediatek","Smart_IR");
 
+    settings->setValue("Tool_Version",VERSION);
     output_log("setting serial port...",1);
     ui->actionPort_Setting->setDisabled(true);//disable uart setting for now
     on_actionOpenUart_triggered();
@@ -688,16 +689,74 @@ void MainWindow::on_actionUpgrade_triggered()
     fupdiaglog = new UpgradeDialog(this,currentMcuVersion,availableMcuVersion);
 
     fupdiaglog->setWindowTitle("Upgrade");
-    this->connect(fupdiaglog,SIGNAL(rejected()),this,SLOT(returnfromUpgrade()));
+    this->connect(fupdiaglog,SIGNAL(UpgradeRejected(bool,uint32_t)),this,SLOT(returnfromUpgrade(bool,uint32_t)));
     //fupdiaglog->show();//非模态
     fupdiaglog->exec();//模态
 
 }
-void MainWindow::returnfromUpgrade()
+void MainWindow::returnfromUpgrade(bool needCloseSerial,uint32_t availableVersion)
 {
     qDebug() << "return from upgrade";
-    serial.close();
-    ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+    if(needCloseSerial)
+    {
+        serial.close();
+        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+        QMessageBox::information(this,"Upgrade Warning","You can get the latest Smart_IR Tool by Download/Download MainTool ");
+    }
+
+    bool needUpgradeTool = 0;
+/*
+ *  int oldVersion = settings->value("Tool_Version",0).toInt();
+
+//need reconsider...............
+    if(availableVersion >= 20170907 && oldVersion < 11)
+    {
+        needUpgradeTool = 1;
+    }
+//need reconsider...............
+*/
+    if(needUpgradeTool)
+    {
+        QString appPath = qApp->applicationDirPath();
+        QString fileDir = appPath.append("/Download_files");
+        QDir *dir = new QDir(fileDir);
+        if(!dir->exists())
+        {
+            logstr = fileDir + " doesn't exist";
+            qDebug() << logstr;
+            output_log(logstr,1);
+
+            bool ok = dir->mkdir(fileDir);
+            if( ok )
+            {
+                logstr = "fileDir created success.";
+                qDebug() << logstr;
+                output_log(logstr,0);
+            }
+            else
+            {
+                logstr = "upgrade fail.";
+                qDebug() << logstr;
+                output_log(logstr,1);
+                return;
+            }
+
+        }
+        QString filePath = appPath.append("/Smart_IR.exe");
+        QFile binFile(filePath);
+        if(binFile.exists())
+        {
+            qDebug() << "Smart_IR.exe exsits,delete it first";
+            QFile::remove(filePath);
+        }
+
+        QString srcBinFilePath = "https://github.com/barrycool/bin/raw/master/Smart_IR.exe";
+        QString cmd = "wget -P " + fileDir + " " + srcBinFilePath;
+        system(cmd.toLatin1().data());
+        QProcess process(this);
+        process.startDetached("Updater.exe");
+        this->close();
+    }
 }
 void MainWindow::leSetIRDevice(int index)
 {
@@ -2454,4 +2513,143 @@ void MainWindow::on_atDownMove_clicked()
             atAddItem2ScriptListWidget(IR_items.at(i).IR_type,tmpNameBuf,IR_items.at(i).delay_time);
         }
         ui->atScriptlistWidget->setCurrentRow(curRow+1);
+}
+
+void MainWindow::on_actionDown_Binary_triggered()
+{
+    QDesktopServices::openUrl(QUrl("https://github.com/barrycool/bin"));
+    return;//for now
+
+    QString appPath = qApp->applicationDirPath();
+    QString fileDir = appPath.append("/Download_files");
+    QDir *dir = new QDir(fileDir);
+    if(!dir->exists())
+    {
+        logstr = fileDir + " doesn't exist";
+        qDebug() << logstr;
+        output_log(logstr,1);
+
+        bool ok = dir->mkdir(fileDir);
+        if( ok )
+        {
+            logstr = "fileDir created success.";
+            qDebug() << logstr;
+            output_log(logstr,0);
+        }
+        else
+        {
+            logstr = "download fail.";
+            qDebug() << logstr;
+            output_log(logstr,1);
+            return;
+        }
+
+    }
+    QString filePath = appPath.append("/IR_stm32f103C8.bin");
+    QFile binFile(filePath);
+    if(binFile.exists())
+    {
+        qDebug() << "IR_stm32f103C8.bin exsit,delete it first";
+        QFile::remove(filePath);
+    }
+
+    QString srcBinFilePath = "https://github.com/barrycool/bin/raw/master/IR_MCU_upgrade_bin/IR_stm32f103C8.bin";
+    QString cmd = "wget -N -P " + fileDir + " " + srcBinFilePath;
+    if(system(cmd.toLatin1().data()))
+    {
+        output_log("download fail!",1);
+    }
+    else
+    {
+        logstr = "download success to " + filePath;
+        output_log(logstr,1);
+    }
+}
+
+void MainWindow::on_actionDownload_MainTool_triggered()
+{
+    QDesktopServices::openUrl(QUrl("https://github.com/barrycool/bin/tree/master/MainTool"));
+
+    return;//for now
+
+    QString appPath = qApp->applicationDirPath();
+    QString fileDir = appPath.append("/Download_files");
+    QDir *dir = new QDir(fileDir);
+    if(!dir->exists())
+    {
+        logstr = fileDir + " doesn't exist";
+        qDebug() << logstr;
+        output_log(logstr,1);
+
+        bool ok = dir->mkdir(fileDir);
+        if( ok )
+        {
+            logstr = "fileDir created success.";
+            qDebug() << logstr;
+            output_log(logstr,0);
+        }
+        else
+        {
+            logstr = "download fail.";
+            qDebug() << logstr;
+            output_log(logstr,1);
+            return;
+        }
+
+    }
+    QString srcBinFilePath = "https://github.com/barrycool/bin/raw/master/Smart_IR.exe";
+    QString cmd = "wget -N -P " + fileDir + " "+ srcBinFilePath;
+    if(system(cmd.toLatin1().data()))
+    {
+        output_log("download fail!",1);
+    }
+    else
+    {
+        logstr = "download success to " + fileDir.append("Smart_IR.exe");
+        output_log(logstr,1);
+    }
+}
+
+void MainWindow::on_actionDownload_UserManual_triggered()
+{
+
+    QDesktopServices::openUrl(QUrl("https://github.com/barrycool/bin/tree/master/UserManual"));
+    return;//for now
+
+    QString appPath = qApp->applicationDirPath();
+    QString fileDir = appPath.append("/Download_files");
+    QDir *dir = new QDir(fileDir);
+    if(!dir->exists())
+    {
+        logstr = fileDir + " doesn't exist";
+        qDebug() << logstr;
+        output_log(logstr,1);
+
+        bool ok = dir->mkdir(fileDir);
+        if( ok )
+        {
+            logstr = "fileDir created success.";
+            qDebug() << logstr;
+            output_log(logstr,0);
+        }
+        else
+        {
+            logstr = "download fail.";
+            qDebug() << logstr;
+            output_log(logstr,1);
+            return;
+        }
+
+    }
+    QString srcBinFilePath = "https://github.com/barrycool/bin/raw/master/Smart%20IR%20user%20manual%20v1.docx";
+    QString cmd = "wget -N -P " + fileDir + " "+ srcBinFilePath;
+    if(system(cmd.toLatin1().data()))
+    {
+        output_log("download fail!",1);
+    }
+    else
+    {
+        logstr = "download success to " + fileDir.append("Smart%20IR%20user%20manual%20v1.docx");
+        output_log(logstr,1);
+    }
 }

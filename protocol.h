@@ -13,6 +13,8 @@
 #define FAIL_RETRY_TIMES    1
 #define IR_devices_MAX  20
 
+#define VERSION 10
+
 enum IR_type_t {
   IR_TYPE_SIRCS,
   IR_TYPE_NEC,

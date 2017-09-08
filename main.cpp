@@ -1,12 +1,14 @@
 #include "mainwindow.h"
 #include <QApplication>
-#define VERSION "1.0"
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     MainWindow w;
     QString title = "Smart IR ";
-    title.append(VERSION);
+    QString Version = QString::number(VERSION);
+    Version.insert(1,".");
+    title.append(Version);
     w.setWindowTitle(title);
     w.setWindowIcon(QIcon(":/new/icon/resource-icon/MIT smart ir logo.png"));
     //w.setSizePolicy(QSizePolicy::Fixed);

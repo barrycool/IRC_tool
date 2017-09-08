@@ -56,6 +56,7 @@ struct ir_button_slot_t {
 };
 */
 
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -137,11 +138,17 @@ private slots:
     void logSaveButton_slot();
     void logClearButton_slot();
     void textChanged_SLOT(const QString &text);
-    void returnfromUpgrade();
+    void returnfromUpgrade(bool,uint32_t);
 
     void on_atUpMove_clicked();
 
     void on_atDownMove_clicked();
+
+    void on_actionDown_Binary_triggered();
+
+    void on_actionDownload_MainTool_triggered();
+
+    void on_actionDownload_UserManual_triggered();
 
 signals:
     //void sendsignal();

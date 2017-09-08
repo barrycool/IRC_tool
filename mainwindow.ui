@@ -2563,8 +2563,17 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
     <addaction name="actionSave_log"/>
     <addaction name="actionSaveasLog"/>
    </widget>
+   <widget class="QMenu" name="menuDownLoad">
+    <property name="title">
+     <string>DownLoad</string>
+    </property>
+    <addaction name="actionDown_Binary"/>
+    <addaction name="actionDownload_MainTool"/>
+    <addaction name="actionDownload_UserManual"/>
+   </widget>
    <addaction name="menuSetting"/>
    <addaction name="menuOperation"/>
+   <addaction name="menuDownLoad"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
@@ -2708,6 +2717,21 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
   <action name="actionSaveasLog">
    <property name="text">
     <string>Save log as..</string>
+   </property>
+  </action>
+  <action name="actionDown_Binary">
+   <property name="text">
+    <string>Download Binary</string>
+   </property>
+  </action>
+  <action name="actionDownload_MainTool">
+   <property name="text">
+    <string>Download MainTool</string>
+   </property>
+  </action>
+  <action name="actionDownload_UserManual">
+   <property name="text">
+    <string>Download UserManual</string>
    </property>
   </action>
  </widget>
