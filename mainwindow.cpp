@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent) :
     upgradethred = new UpgradeThread();
     connect(upgradethred,SIGNAL(finish(bool)),this,SLOT(httpDowloadFinished(bool)));
     connect(upgradethred,SIGNAL(getVersionSignal()),this,SLOT(getCurrentMcuVersion()));
-    //upgradethred->start();
+    upgradethred->start();
 
     portBox = new QComboBox;
     ui->mainToolBar->insertWidget(ui->actionOpenUart,portBox);
@@ -303,8 +303,7 @@ void MainWindow::serial_receive_data()
     }
     qDebug() << log;
     output_log(log,0);
-    buf_len = 0;
-return;
+
     if(frame->msg == CMD_NACK)
     {
         sendcmd_timer.stop();
@@ -473,7 +472,7 @@ return;
         output_log(logstr,1);
         ui->atScriptlistWidget->setCurrentRow(frame->msg_parameter[0]+1);
     }
-
+    buf_len = 0;
 }
 
 void MainWindow::printIrItemInfo(IR_item_t ir_item)
