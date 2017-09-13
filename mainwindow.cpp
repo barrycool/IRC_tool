@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent) :
     upgradethred = new UpgradeThread();
     connect(upgradethred,SIGNAL(finish(bool)),this,SLOT(httpDowloadFinished(bool)));
     connect(upgradethred,SIGNAL(getVersionSignal()),this,SLOT(getCurrentMcuVersion()));
-    upgradethred->start();
+    //upgradethred->start();
 
     portBox = new QComboBox;
     ui->mainToolBar->insertWidget(ui->actionOpenUart,portBox);
@@ -291,18 +291,20 @@ void MainWindow::serial_receive_data()
         output_log("CRC32 err",0);
         return;
     }
-/*
+
     qDebug() << "receive packet:";
     log = "receive packet:";
-    output_log(log,0);
+    //output_log(log,0);
 
-    for(uint8_t j = 0; j< buf_len + 1; j++)
+    for(int j = 0; j< buf_len; j++)
     {
-        log += QString("%1 ").arg(buf[j]);
+        log += QString::number(buf[j],10);
+        log += " ";
     }
     qDebug() << log;
     output_log(log,0);
-*/
+    buf_len = 0;
+return;
     if(frame->msg == CMD_NACK)
     {
         sendcmd_timer.stop();
@@ -471,7 +473,7 @@ void MainWindow::serial_receive_data()
         output_log(logstr,1);
         ui->atScriptlistWidget->setCurrentRow(frame->msg_parameter[0]+1);
     }
-    buf_len = 0;
+
 }
 
 void MainWindow::printIrItemInfo(IR_item_t ir_item)
@@ -569,7 +571,7 @@ void MainWindow::portChanged(int index)
 void MainWindow::on_actionAbout_IRC_triggered()
 {
     AboutIrc *diaglog = new AboutIrc;
-    diaglog->setWindowTitle("IRC Tool Info");
+    diaglog->setWindowTitle("Smart_IR Tool Info");
     //diaglog->show();//非模态
     diaglog->exec();//模态
 }
@@ -2517,7 +2519,7 @@ void MainWindow::on_atDownMove_clicked()
 
 void MainWindow::on_actionDown_Binary_triggered()
 {
-    QDesktopServices::openUrl(QUrl("https://github.com/barrycool/bin"));
+    QDesktopServices::openUrl(QUrl("https://github.com/barrycool/bin/tree/master/IR_MCU_upgrade_bin"));
     return;//for now
 
     QString appPath = qApp->applicationDirPath();
@@ -2641,7 +2643,7 @@ void MainWindow::on_actionDownload_UserManual_triggered()
         }
 
     }
-    QString srcBinFilePath = "https://github.com/barrycool/bin/raw/master/Smart%20IR%20user%20manual%20v1.docx";
+    QString srcBinFilePath = "https://github.com/barrycool/bin/raw/master/Smart%20IR%20user%20manual%20v2.docx";
     QString cmd = "wget -N -P " + fileDir + " "+ srcBinFilePath;
     if(system(cmd.toLatin1().data()))
     {
@@ -2649,7 +2651,44 @@ void MainWindow::on_actionDownload_UserManual_triggered()
     }
     else
     {
-        logstr = "download success to " + fileDir.append("Smart%20IR%20user%20manual%20v1.docx");
+        logstr = "download success to " + fileDir.append("Smart%20IR%20user%20manual%20v2.docx");
+        output_log(logstr,1);
+    }
+}
+
+void MainWindow::on_actionDownload_SerialDriver_triggered()
+{
+    //QDesktopServices::openUrl(QUrl("https://github.com/barrycool/bin/raw/master/SerialDriver/en.stsw-link009.zip"));
+    //return;//for now
+
+    QString appPath = qApp->applicationDirPath();
+    QString fileDir = appPath.append("/Download_files");
+    QDir *dir = new QDir(fileDir);
+    if(!dir->exists())
+    {
+        bool ok = dir->mkdir(fileDir);
+        if( ok )
+        {
+            ;
+        }
+        else
+        {
+            logstr = "download fail.";
+            qDebug() << logstr;
+            output_log(logstr,1);
+            return;
+        }
+
+    }
+    QString srcBinFilePath = "https://github.com/barrycool/bin/raw/master/SerialDriver/en.stsw-link009.zip";
+    QString cmd = "wget -N -P " + fileDir + " "+ srcBinFilePath;
+    if(system(cmd.toLatin1().data()))
+    {
+        output_log("download fail!",1);
+    }
+    else
+    {
+        logstr = "download success to " + fileDir.append("en.stsw-link009.zip");
         output_log(logstr,1);
     }
 }

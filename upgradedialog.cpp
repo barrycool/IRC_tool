@@ -146,13 +146,33 @@ void UpgradeDialog::checkForMcuUpgrade()
     //need to download upgrade files from github,and get the version
         QString srcBinFilePath;
 
-
+        QString logstr;
         if(isNetworkAccessable)
         {
-
             //step 1 :delete old bin
             QString appPath = qApp->applicationDirPath();
-            QString filename = appPath.remove("/debug").append("\\IR_stm32f103C8.bin");
+            QString fileDir = appPath.append("/Download_files");
+            QDir *dir = new QDir(fileDir);
+            if(!dir->exists())
+            {
+                logstr = fileDir + " doesn't exist";
+                qDebug() << logstr;
+
+                bool ok = dir->mkdir(fileDir);
+                if( ok )
+                {
+                    logstr = "fileDir created success.";
+                    qDebug() << logstr;
+                }
+                else
+                {
+                    logstr = "download fail.";
+                    qDebug() << logstr;
+                    return;
+                }
+
+            }
+            QString filename = appPath.append("/IR_stm32f103C8.bin");
             QFile binFile(filename);
             ui->upStatusText->append(filename);
             if(binFile.exists())
@@ -163,8 +183,19 @@ void UpgradeDialog::checkForMcuUpgrade()
             }
             //step 2 :download new bin from github
             srcBinFilePath = "https://github.com/barrycool/bin/raw/master/IR_MCU_upgrade_bin/IR_stm32f103C8.bin";
-            QString cmd = "wget " + srcBinFilePath;
-            system(cmd.toLatin1().data());
+            //QString cmd = "wget " + srcBinFilePath;
+            QString cmd = "wget -P " + fileDir + " " + srcBinFilePath;
+            if(system(cmd.toLatin1().data()))
+            {
+                ui->upStatusText->setText("download fail!");
+                return;
+            }
+            else
+            {
+                logstr = "download success to " + filename;
+                ui->upStatusText->setText(logstr);
+                dstBinFilePath = filename;
+            }
 
             //step 3 :analysis version
             uint32_t availableVersion;
@@ -174,12 +205,12 @@ void UpgradeDialog::checkForMcuUpgrade()
             if (binFile.size() != 0)
             {
                 qDebug () << filename;
-                isUpgradefileDownloaded = true;
+
                 if (check_valid_upgrade_bin_version(filename, availableVersion, checksum))
                 {
                     QString tmp = QString::number(availableVersion,16);
                     availableMcuVersion = tmp.toInt();
-                    ui->upAvailablelineEdit->setText(tmp);
+
                     if(availableMcuVersion <= currentMcuVersion)
                     {
                         logstr ="currentMcuVersion is the latest version,no need to upgrade";
@@ -194,7 +225,19 @@ void UpgradeDialog::checkForMcuUpgrade()
                         ui->upStatusText->append(logstr);
                         ui->upUpgradeButton->setEnabled(true);
                     }
+                    ui->upAvailablelineEdit->setText(QString::number(availableMcuVersion));
+
+                    ui->upLocalPathEdit->setText(dstBinFilePath);
+                    isUpgradefileDownloaded = true;
                 }
+                else
+                {
+                    logstr = "Upgrade file is crrupted!";
+                    qDebug() << logstr;
+                    ui->upStatusText->append(logstr);
+                    ui->upUpgradeButton->setEnabled(false);
+                }
+
             }
         }
         else
@@ -271,12 +314,6 @@ void UpgradeDialog::upUpgradeButton_slot()
     ui->upProgressBar->setMaximum(100);
 
     ui->upProgressBar->show();
-
-    if(dstBinFilePath.isEmpty())
-    {
-        QString appPath = qApp->applicationDirPath();
-        dstBinFilePath = appPath.remove("/debug").append("/IR_stm32f103C8.bin");
-    }
 
     QByteArray name = dstBinFilePath.toLatin1();
 

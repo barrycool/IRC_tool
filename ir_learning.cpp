@@ -659,7 +659,7 @@ uint8_t IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
     if (IR_encode_learning(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_learning))
         return 1;
 
-    QMessageBox::critical(NULL, "unspoorted IR protocol", "unspoorted IR protocol");
+    //QMessageBox::critical(NULL, "unspoorted IR protocol", "unspoorted IR protocol");
 
     return 0;
 }

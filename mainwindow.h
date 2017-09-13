@@ -150,6 +150,8 @@ private slots:
 
     void on_actionDownload_UserManual_triggered();
 
+    void on_actionDownload_SerialDriver_triggered();
+
 signals:
     //void sendsignal();
     void send2learningwave();

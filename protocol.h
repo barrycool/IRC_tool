@@ -8,12 +8,14 @@
 #define MAX_KEY_LEN         128
 #define MAX_NAME_LEN        16
 #define UPGRADE_PACKET_SIZE 52
-#define BUF_LEN             255
+#define BUF_LEN             512
 #define IR_MAX_LEVEL_NUMBER     10
 #define FAIL_RETRY_TIMES    1
 #define IR_devices_MAX  20
 
-#define VERSION 10
+#define VERSION 11
+//#define MINIMUM_MCU_VERSION  20170907
+//#define MAXMUM_MCU_VERSION   20171020
 
 enum IR_type_t {
   IR_TYPE_SIRCS,

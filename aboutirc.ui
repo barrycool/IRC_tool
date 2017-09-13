@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>384</width>
+    <width>369</width>
     <height>147</height>
    </rect>
   </property>
@@ -16,15 +16,14 @@
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
-     <x>40</x>
+     <x>10</x>
      <y>20</y>
-     <width>301</width>
+     <width>331</width>
      <height>91</height>
     </rect>
    </property>
    <property name="text">
-    <string>当前IRC 版本为 1.0
-如遇到任何问题,请联系 HSD/SW9/SS5 Lianlian.Huang</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Smart_IR是一款辅助烧机的工具，支持绝大多数IR协议；&lt;/p&gt;&lt;p&gt;若出现无法使用的遥控器，请联系 Barry.Liu&lt;/p&gt;&lt;p&gt;Smart_IR Device 问题，请联系 Barry.liu&lt;/p&gt;&lt;p&gt;Smart_IR PC Tool问题，请联系 Lianlian.Huang &amp;amp; Luna.Chen&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
  </widget>

@@ -2570,6 +2570,7 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
     <addaction name="actionDown_Binary"/>
     <addaction name="actionDownload_MainTool"/>
     <addaction name="actionDownload_UserManual"/>
+    <addaction name="actionDownload_SerialDriver"/>
    </widget>
    <addaction name="menuSetting"/>
    <addaction name="menuOperation"/>
@@ -2622,7 +2623,7 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
   </action>
   <action name="actionAbout_IRC">
    <property name="text">
-    <string>About IRC</string>
+    <string>About SmartIR</string>
    </property>
   </action>
   <action name="actionFresh">
@@ -2732,6 +2733,11 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
   <action name="actionDownload_UserManual">
    <property name="text">
     <string>Download UserManual</string>
+   </property>
+  </action>
+  <action name="actionDownload_SerialDriver">
+   <property name="text">
+    <string>Download SerialDriver</string>
    </property>
   </action>
  </widget>
