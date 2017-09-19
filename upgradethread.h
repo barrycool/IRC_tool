@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QDir>
 #include <QDebug>
+#include <windows.h>
 
 class UpgradeThread : public QThread
 {

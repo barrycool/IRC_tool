@@ -30,12 +30,13 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
     availableMcuVersion = available;
     ui->upCurrentlineEdit->setText(QString::number(currentMcuVersion));
     ui->upAvailablelineEdit->setText(QString::number(availableMcuVersion));
-    if(availableMcuVersion>0)
+    if(availableMcuVersion > 0)
     {
         isUpgradefileDownloaded = 1;
-    }
 
-    dstBinFilePath.resize(0);
+        QString appPath = qApp->applicationDirPath();
+        dstBinFilePath = appPath.remove("/debug").remove("/release").append("/IR_stm32f103C8.bin");
+    }
 
     QObject::connect(ui->upUpgradeButton,SIGNAL(clicked()),this,SLOT(upUpgradeButton_slot()));
     QObject::connect(ui->upCancelButton,SIGNAL(clicked()),this,SLOT(upCancelButton_slot()));
@@ -60,7 +61,7 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
 
     //check if can access the internet
     QHostInfo::lookupHost("www.baidu.com",this,SLOT(onLookupHost(QHostInfo)));
-
+#if ANTIROLLBACK_UPGRADE
     if(currentMcuVersion >= availableMcuVersion)
     {
         //just for test
@@ -73,6 +74,9 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
         ui->upUpgradeButton->setDisabled(false);
         ui->upStatusText->setText("Please press upgrade button!");
     }
+#else
+    ui->upUpgradeButton->setDisabled(false);
+#endif
     //connect(&serial, SIGNAL(readyRead()), this, SLOT(serial_receive_ack()));
     //getPortInfoByName(portName);
 }
@@ -115,6 +119,7 @@ void UpgradeDialog::updateCurrentVersionSlot(IR_MCU_Version_t * mcuVersion)
     currentMcuVersion = currentVersionStr.toInt();
 
     ui->upCurrentlineEdit->setText(currentVersionStr);
+#if ANTIROLLBACK_UPGRADE
     if(availableMcuVersion <= currentMcuVersion)
     {
         QString logstr ="currentMcuVersion is the latest version,no need to upgrade";
@@ -129,6 +134,9 @@ void UpgradeDialog::updateCurrentVersionSlot(IR_MCU_Version_t * mcuVersion)
         ui->upStatusText->append(logstr);
         ui->upUpgradeButton->setEnabled(true);
     }
+#else
+    ui->upUpgradeButton->setEnabled(true);
+#endif
 
     qDebug() << "get Current mcu version:" << currentVersionStr;
 
@@ -185,7 +193,8 @@ void UpgradeDialog::checkForMcuUpgrade()
             srcBinFilePath = "https://github.com/barrycool/bin/raw/master/IR_MCU_upgrade_bin/IR_stm32f103C8.bin";
             //QString cmd = "wget " + srcBinFilePath;
             QString cmd = "wget -P " + fileDir + " " + srcBinFilePath;
-            if(system(cmd.toLatin1().data()))
+            //WinExec(cmd.toLatin1().data(), SW_HIDE);
+            if(/*WinExec(cmd.toLatin1().data(), SW_HIDE)*/system(cmd.toLatin1().data()))
             {
                 ui->upStatusText->setText("download fail!");
                 return;
@@ -210,7 +219,7 @@ void UpgradeDialog::checkForMcuUpgrade()
                 {
                     QString tmp = QString::number(availableVersion,16);
                     availableMcuVersion = tmp.toInt();
-
+#if ANTIROLLBACK_UPGRADE
                     if(availableMcuVersion <= currentMcuVersion)
                     {
                         logstr ="currentMcuVersion is the latest version,no need to upgrade";
@@ -225,6 +234,9 @@ void UpgradeDialog::checkForMcuUpgrade()
                         ui->upStatusText->append(logstr);
                         ui->upUpgradeButton->setEnabled(true);
                     }
+#else
+                    ui->upUpgradeButton->setEnabled(true);
+#endif
                     ui->upAvailablelineEdit->setText(QString::number(availableMcuVersion));
 
                     ui->upLocalPathEdit->setText(dstBinFilePath);
@@ -270,7 +282,7 @@ void UpgradeDialog::upChooseLocalFileButton_slot()
         {
             QString tmp = QString::number(availableVersion,16); //10进制转成16进制
             availableMcuVersion = tmp.toInt();
-
+#if ANTIROLLBACK_UPGRADE
             if(availableMcuVersion <= currentMcuVersion)
             {
                 logstr ="currentMcuVersion is newer than local upgrade file,no need to upgrade";
@@ -285,7 +297,9 @@ void UpgradeDialog::upChooseLocalFileButton_slot()
                 ui->upStatusText->append(logstr);
                 ui->upUpgradeButton->setEnabled(true);
             }
-
+#else
+            ui->upUpgradeButton->setEnabled(true);
+#endif
             ui->upAvailablelineEdit->setText(QString::number(availableMcuVersion));
 
             ui->upLocalPathEdit->setText(path);
@@ -312,7 +326,7 @@ void UpgradeDialog::upUpgradeButton_slot()
 
     ui->upProgressBar->setMinimum(0);
     ui->upProgressBar->setMaximum(100);
-
+    ui->upProgressBar->setValue(0);
     ui->upProgressBar->show();
 
     QByteArray name = dstBinFilePath.toLatin1();
@@ -347,7 +361,7 @@ void UpgradeDialog::sendUpgradeStartPacket()
     packetid = 0;
     current_file_length = 0;
     upgrade_flag = 1;
-    seqnum = 1;
+    //seqnum = 1;
 
     struct frame_t *frame = (struct frame_t *)buf;
     ui->upStatusText->append("Sending start packet...");
@@ -394,19 +408,17 @@ void UpgradeDialog::sendUpgradeFinishPacket()
     ui->upCancelButton->setDisabled(false);
     ui->upUpgradeButton->setDisabled(true);
     upgrade_flag = 0;
-    QMessageBox::information(this,"Upgrade Finish","ugrade finish,please reset your device!");
-
+    //QMessageBox::information(this,"Upgrade Finish","Please download the latest Smart_IR Tool by Download/Download MainTool");
+    QMessageBox::StandardButton reply = QMessageBox::information(this,"Upgrade Finish","Please download the latest Smart_IR Tool by Download/Download MainTool");
+    if(reply == QMessageBox::Ok)
+    {
+        emit UpgradeRejected(1,availableMcuVersion);
+        reject();
+    }
 }
 
 void UpgradeDialog::sendUpgradeBinPacket()
 {
-    /*
-    bool isEmpty = upgradePacketList.isEmpty();
-    qDebug() << "sendUpgradeBinPacket,upgradePacketList.isEmpty:"<<isEmpty;
-    if(!isEmpty)
-    {
-    */
-
     if (!upgrade_flag)
     {
         return;
@@ -486,6 +498,10 @@ void UpgradeDialog::ackReceivedSlot(int msg_id)
 
 void UpgradeDialog::cmdFailSlot()
 {
+  if(!upgrade_flag)
+  {
+      return;
+  }
   ui->upStatusText->append("send cmd fail!");
   ui->upProgressBar->setValue(100);
   if (upgrade_file != NULL)
@@ -609,6 +625,7 @@ bool check_valid_upgrade_bin_version(QString fileName,uint32_t &version, uint32_
 
     version = upgrade_bin_tailer.upgrade_version;
     fclose(bin_file);
+    //dstBinFilePath = fileName;
     return true;
 }
 

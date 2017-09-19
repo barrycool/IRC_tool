@@ -137,8 +137,8 @@ void MainWindow::httpDowloadFinished(bool flag)
     uint32_t availableVersion;
     uint32_t checksum;
     QString appPath = qApp->applicationDirPath();
-    QString filename = appPath.remove("/debug").append("/IR_stm32f103C8.bin");
-    output_log(filename,1);
+    QString filename = appPath.remove("/debug").remove("/release").append("/IR_stm32f103C8.bin");
+    output_log("binPath:" + filename,1);
     //currentMcuVersion = currentMcuVersion -1; //just for test
 
     if (filename.size() != 0)
@@ -172,6 +172,14 @@ void MainWindow::httpDowloadFinished(bool flag)
                 output_log(logstr,1);
             }
         }
+        else
+        {
+            output_log("checksum is error ",1);
+        }
+    }
+    else
+    {
+        output_log("cannot find bin ",1);
     }
     upgradethred->quit();
 }
@@ -230,6 +238,11 @@ void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
     if(frame->msg != CMD_ACK && frame->msg != UPGRADE_FINISH)
     {
         sendcmd_timer.start(2000);
+    }
+    if(frame->msg == UPGRADE_FINISH)
+    {
+        serial.close();
+        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
     }
 }
 void MainWindow::sendcmdTimeout()
@@ -560,6 +573,8 @@ void MainWindow::printIrItemInfo(IR_item_t ir_item)
 void MainWindow::portChanged(int index)
 {
     qDebug()<<"portChanged to: "<< index;
+    if(index == -1)
+        return;
 
     settings->setValue("SeialPortName",portBox->currentText());
 
@@ -730,9 +745,9 @@ void MainWindow::returnfromUpgrade(bool needCloseSerial,uint32_t availableVersio
     qDebug() << "return from upgrade";
     if(needCloseSerial)
     {
-        serial.close();
-        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
-        QMessageBox::information(this,"Upgrade Warning","You can get the latest Smart_IR Tool by Download/Download MainTool ");
+        //serial.close();
+        //ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+        //QMessageBox::information(this,"Upgrade Warning","You NEED to download the latest Smart_IR Tool by Download/Download MainTool ");
     }
 
     bool needUpgradeTool = 0;
@@ -2720,4 +2735,8 @@ void MainWindow::on_actionDownload_SerialDriver_triggered()
         logstr = "download success to " + fileDir.append("en.stsw-link009.zip");
         output_log(logstr,1);
     }
+}
+void MainWindow::on_actionWifiSetting_triggered()
+{
+    ui->WifiSetting->showMaximized();
 }

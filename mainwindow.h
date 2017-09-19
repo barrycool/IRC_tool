@@ -152,6 +152,7 @@ private slots:
 
     void on_actionDownload_SerialDriver_triggered();
     void on_itemClicked(QListWidgetItem * item);
+    void on_actionWifiSetting_triggered();
 
 signals:
     //void sendsignal();

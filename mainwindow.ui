@@ -2526,6 +2526,11 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
       </property>
      </widget>
     </widget>
+    <widget class="QWidget" name="WifiSetting">
+     <property name="windowTitle">
+      <string>子窗口</string>
+     </property>
+    </widget>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
@@ -2559,6 +2564,7 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
     <addaction name="actionUpgrade"/>
     <addaction name="actionLearningKey"/>
     <addaction name="actionAgingTest"/>
+    <addaction name="actionWifiSetting"/>
     <addaction name="actionLog"/>
     <addaction name="actionSave_log"/>
     <addaction name="actionSaveasLog"/>
@@ -2738,6 +2744,11 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
   <action name="actionDownload_SerialDriver">
    <property name="text">
     <string>Download SerialDriver</string>
+   </property>
+  </action>
+  <action name="actionWifiSetting">
+   <property name="text">
+    <string>WifiSetting</string>
    </property>
   </action>
  </widget>
