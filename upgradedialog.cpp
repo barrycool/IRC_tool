@@ -65,7 +65,7 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
     if(currentMcuVersion >= availableMcuVersion)
     {
         //just for test
-        //ui->upUpgradeButton->setDisabled(true);
+        ui->upUpgradeButton->setDisabled(true);
 
         ui->upStatusText->setText("No need to upgrade!");
     }

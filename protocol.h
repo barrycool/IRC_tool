@@ -12,7 +12,8 @@
 #define IR_MAX_LEVEL_NUMBER     10
 #define FAIL_RETRY_TIMES    1
 #define IR_devices_MAX  20
-#define ANTIROLLBACK_UPGRADE    0
+
+#define ANTIROLLBACK_UPGRADE    1
 
 #define VERSION 12
 
