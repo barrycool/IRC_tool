@@ -151,6 +151,7 @@ private slots:
     void on_actionDownload_UserManual_triggered();
 
     void on_actionDownload_SerialDriver_triggered();
+    void on_itemClicked(QListWidgetItem * item);
 
 signals:
     //void sendsignal();

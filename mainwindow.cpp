@@ -96,15 +96,43 @@ MainWindow::MainWindow(QWidget *parent) :
     sendcmd_timer.setSingleShot(true);
     //cmdSemaphore = new QSemaphore(1);
     isInit = 1;
+
+    connect(ui->atScriptlistWidget, QListWidget::itemClicked, this, on_itemClicked);
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
 }
+
+void MainWindow::on_itemClicked(QListWidgetItem * item)
+{
+    (void)item;
+    if (ui->atScriptlistWidget->currentRow() != -1)
+    {
+        uint8_t buf[255];
+
+        struct frame_t *frame = (struct frame_t *)buf;
+
+        frame->header = FRAME_HEADER;
+        frame->data_len = sizeof(struct frame_t);
+        frame->seq_num = seqnum++;
+        frame->msg = SET_SEND_IDX;
+
+        frame->msg_parameter[0] = (ui->atScriptlistWidget->currentRow() - 1) & 0xFF;
+        frame->data_len++;
+
+        buf[frame->data_len] = CRC8Software(buf, frame->data_len);
+
+        sendCmd2MCU(buf, frame->data_len+1);
+    }
+}
+
 extern bool isUpgradefileDownloaded;
 void MainWindow::httpDowloadFinished(bool flag)
 {
+    (void)flag;
+
     output_log("upgrade bin download finished!",1);
     uint32_t availableVersion;
     uint32_t checksum;
@@ -697,6 +725,8 @@ void MainWindow::on_actionUpgrade_triggered()
 }
 void MainWindow::returnfromUpgrade(bool needCloseSerial,uint32_t availableVersion)
 {
+    (void)availableVersion;
+
     qDebug() << "return from upgrade";
     if(needCloseSerial)
     {
