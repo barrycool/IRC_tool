@@ -139,6 +139,7 @@ private slots:
     void logClearButton_slot();
     void textChanged_SLOT(const QString &text);
     void returnfromUpgrade(bool,uint32_t);
+    void upgradedialog_reject();
 
     void on_atUpMove_clicked();
 
@@ -157,9 +158,10 @@ private slots:
 signals:
     //void sendsignal();
     void send2learningwave();
-    void updateVersionSignal(IR_MCU_Version_t *);
+    void updateVersionSignal(uint32_t,uint32_t);
     void receiveAckSignal(int);
     void cmdFailSignal();
+    void enableFreshVersion(bool);
 
 private:
     Ui::MainWindow *ui;

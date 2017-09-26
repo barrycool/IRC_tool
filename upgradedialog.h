@@ -42,7 +42,7 @@ signals:
 private slots:
     void checkForMcuUpgrade();
     void SendCmd2GetCurrentVersion();
-    void updateCurrentVersionSlot(IR_MCU_Version_t *);
+    void updateCurrentVersionSlot(uint32_t,uint32_t);
     void ackReceivedSlot(int);
     void cmdFailSlot();
     void openUrl_slot(QString);
@@ -51,6 +51,8 @@ private slots:
     void upUpgradeButton_slot();
     void upCancelButton_slot();
     void on_upClear_clicked();
+    void enableFreshVersionButton(bool);
+
 
 private:
     Ui::UpgradeDialog *ui;

@@ -3,6 +3,7 @@
 UpgradeThread::UpgradeThread()
 {
 
+
 }
 void UpgradeThread::run()
 {
@@ -26,12 +27,12 @@ void UpgradeThread::run()
     }
 
     QString srcBinFilePath = "https://github.com/barrycool/bin/raw/master/IR_MCU_upgrade_bin/IR_stm32f103C8.bin";
-    QString cmd = "wget " + srcBinFilePath;
-    char * cmds= cmd.toLatin1().data();
+    //QString cmd = "wget " + srcBinFilePath;
+    //char * cmds= cmd.toLatin1().data();
     //system(cmd.toLatin1().data());
     //WinExec(cmd.toLatin1().data(), SW_HIDE);
-
-    SHELLEXECUTEINFO  ShExecInfo  =   {0};
+    //emit disableFreshVersion(true);
+    SHELLEXECUTEINFO  ShExecInfo;
      ShExecInfo.cbSize  =   sizeof(SHELLEXECUTEINFO);
      ShExecInfo.fMask   =  SEE_MASK_NOCLOSEPROCESS;
      ShExecInfo.hwnd  =   NULL;
@@ -42,10 +43,11 @@ void UpgradeThread::run()
      ShExecInfo.nShow   =   SW_HIDE;
      ShExecInfo.hInstApp  =  NULL;
      ShellExecuteEx(&ShExecInfo);
+
      //ShellExecute(NULL, L"open", L"wget.exe", NULL, L"D://02_wind//main", SW_SHOW);
      WaitForSingleObject(ShExecInfo.hProcess,INFINITE);
 
-
+    //emit disableFreshVersion(false);
     //QThread::sleep(5);
 
     emit finish(true);

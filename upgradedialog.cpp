@@ -30,12 +30,17 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
     availableMcuVersion = available;
     ui->upCurrentlineEdit->setText(QString::number(currentMcuVersion));
     ui->upAvailablelineEdit->setText(QString::number(availableMcuVersion));
+
     if(availableMcuVersion > 0)
     {
         isUpgradefileDownloaded = 1;
 
         QString appPath = qApp->applicationDirPath();
         dstBinFilePath = appPath.remove("/debug").remove("/release").append("/IR_stm32f103C8.bin");
+    }
+    else
+    {
+        ui->upFreshAvailableButton->setDisabled(true);
     }
 
     QObject::connect(ui->upUpgradeButton,SIGNAL(clicked()),this,SLOT(upUpgradeButton_slot()));
@@ -49,7 +54,7 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
     connect(parent,SIGNAL(receiveAckSignal(int)),this,SLOT(ackReceivedSlot(int)));
 
     connect(parent,SIGNAL(cmdFailSignal()),this,SLOT(cmdFailSlot()));
-    connect(parent,SIGNAL(updateVersionSignal(IR_MCU_Version_t *)),this,SLOT(updateCurrentVersionSlot(IR_MCU_Version_t *)));
+    connect(parent,SIGNAL(updateVersionSignal(uint32_t,uint32_t)),this,SLOT(updateCurrentVersionSlot(uint32_t,uint32_t)));
 
     cmdSemaphore = new QSemaphore(1);
 
@@ -86,6 +91,7 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
 UpgradeDialog::~UpgradeDialog()
 {
     //serial->close();
+    qDebug() << "~UpgradeDialog";
     upgrade_flag = 0;
     delete ui;
 }
@@ -109,16 +115,27 @@ void UpgradeDialog::openUrl_slot(QString str)
 {
     QDesktopServices::openUrl(QUrl(str));
 }
-void UpgradeDialog::updateCurrentVersionSlot(IR_MCU_Version_t * mcuVersion)
-{
 
+void UpgradeDialog::enableFreshVersionButton(bool setEnabled)
+{
+    ui->upFreshAvailableButton->setEnabled(setEnabled);
+}
+
+void UpgradeDialog::updateCurrentVersionSlot(uint32_t curVersion,uint32_t latestVersion)
+{
+    QString appPath = qApp->applicationDirPath();
+/*
     QString currentVersionStr = QString::asprintf("%02x%02x%02x%02x",
                                                  mcuVersion->year_high, mcuVersion->year_low,
                                                  mcuVersion->month, mcuVersion->day);
-
-    currentMcuVersion = currentVersionStr.toInt();
+*/
+    currentMcuVersion = curVersion;//currentVersionStr.toInt();
+    availableMcuVersion = latestVersion;
+    QString currentVersionStr = QString::number(currentMcuVersion);
+    QString avialableVersionStr = QString::number(availableMcuVersion);
 
     ui->upCurrentlineEdit->setText(currentVersionStr);
+    ui->upAvailablelineEdit->setText(avialableVersionStr);
 #if ANTIROLLBACK_UPGRADE
     if(availableMcuVersion <= currentMcuVersion)
     {
@@ -133,9 +150,11 @@ void UpgradeDialog::updateCurrentVersionSlot(IR_MCU_Version_t * mcuVersion)
         qDebug() << logstr;
         ui->upStatusText->append(logstr);
         ui->upUpgradeButton->setEnabled(true);
+        dstBinFilePath = appPath.remove("/debug").remove("/release").append("/IR_stm32f103C8.bin");
     }
 #else
     ui->upUpgradeButton->setEnabled(true);
+    dstBinFilePath = appPath.remove("/debug").remove("/release").append("/IR_stm32f103C8.bin");
 #endif
 
     qDebug() << "get Current mcu version:" << currentVersionStr;
@@ -409,12 +428,14 @@ void UpgradeDialog::sendUpgradeFinishPacket()
     ui->upUpgradeButton->setDisabled(true);
     upgrade_flag = 0;
     //QMessageBox::information(this,"Upgrade Finish","Please download the latest Smart_IR Tool by Download/Download MainTool");
+
     QMessageBox::StandardButton reply = QMessageBox::information(this,"Upgrade Finish","Please download the latest Smart_IR Tool by Download/Download MainTool");
     if(reply == QMessageBox::Ok)
     {
         emit UpgradeRejected(1,availableMcuVersion);
         reject();
     }
+
 }
 
 void UpgradeDialog::sendUpgradeBinPacket()

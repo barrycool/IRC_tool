@@ -98,6 +98,7 @@ MainWindow::MainWindow(QWidget *parent) :
     isInit = 1;
 
     connect(ui->atScriptlistWidget, QListWidget::itemClicked, this, on_itemClicked);
+    fupdiaglog = NULL;
 }
 
 MainWindow::~MainWindow()
@@ -134,6 +135,7 @@ void MainWindow::httpDowloadFinished(bool flag)
     (void)flag;
 
     output_log("upgrade bin download finished!",1);
+    emit enableFreshVersion(true);
     uint32_t availableVersion;
     uint32_t checksum;
     QString appPath = qApp->applicationDirPath();
@@ -158,6 +160,10 @@ void MainWindow::httpDowloadFinished(bool flag)
                 logstr ="currentMcuVersion is the latest version,no need to upgrade";
                 qDebug() << logstr;
                 output_log(logstr,1);
+                if(fupdiaglog !=NULL)
+                {
+                    emit updateVersionSignal(currentMcuVersion,availableMcuVersion);
+                }
             }
             else
             {
@@ -241,14 +247,23 @@ void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
     }
     if(frame->msg == UPGRADE_FINISH)
     {
-        serial.close();
-        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+        sendcmd_timer.start(500);
+        //serial.close();
+        //ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
     }
 }
 void MainWindow::sendcmdTimeout()
 {
     //cmdSemaphore->release();
-
+    struct frame_t *frame = (struct frame_t *)backupCmdBuffer;
+    if(frame->msg == UPGRADE_FINISH)
+    {
+        output_log("send UPGRADE_FINISH,500ms timer is triggered!",1);
+        serial.close();
+        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+        //QMessageBox::information(this,"Upgrade Finish","Please download the latest Smart_IR Tool by Download/Download MainTool");
+        return;
+    }
     if(resendCount > FAIL_RETRY_TIMES)
     {
         qDebug("retry for %d times still Timeout,quit!",FAIL_RETRY_TIMES);
@@ -472,7 +487,7 @@ void MainWindow::serial_receive_data()
         output_log("currentMcuVersion is ",1);
         output_log(QString::number(currentMcuVersion),1);
 
-        emit updateVersionSignal(&mcuVersion);
+        emit updateVersionSignal(currentMcuVersion,availableMcuVersion);
     }
     else if (frame->msg == REAL_TIME_RECV)
     {
@@ -729,14 +744,32 @@ void MainWindow::on_actionFresh_triggered()
 
 void MainWindow::on_actionUpgrade_triggered()
 {
-    //serial.close();
-    fupdiaglog = new UpgradeDialog(this,currentMcuVersion,availableMcuVersion);
+    if(fupdiaglog == NULL)
+    {
+        //serial.close();
+        fupdiaglog = new UpgradeDialog(this,currentMcuVersion,availableMcuVersion);
 
-    fupdiaglog->setWindowTitle("Upgrade");
-    this->connect(fupdiaglog,SIGNAL(UpgradeRejected(bool,uint32_t)),this,SLOT(returnfromUpgrade(bool,uint32_t)));
-    //fupdiaglog->show();//非模态
-    fupdiaglog->exec();//模态
+        fupdiaglog->setWindowTitle("Upgrade");
+        this->connect(fupdiaglog,SIGNAL(UpgradeRejected(bool,uint32_t)),this,SLOT(returnfromUpgrade(bool,uint32_t)));
+        this->connect(fupdiaglog,SIGNAL(rejected()),this,SLOT(upgradedialog_reject()));
+        connect(this,SIGNAL(enableFreshVersion(bool)),fupdiaglog,SLOT(enableFreshVersionButton(bool)));
+        //fupdiaglog->show();//非模态
+        fupdiaglog->exec();//模态
+    }
+    else
+    {
+        emit updateVersionSignal(currentMcuVersion,availableMcuVersion);
+    }
+}
 
+void MainWindow::upgradedialog_reject()
+{
+    qDebug() << "upgradedialog_reject";
+    if(fupdiaglog != NULL)
+    {
+        delete fupdiaglog;
+        fupdiaglog = NULL;
+    }
 }
 void MainWindow::returnfromUpgrade(bool needCloseSerial,uint32_t availableVersion)
 {
@@ -751,6 +784,11 @@ void MainWindow::returnfromUpgrade(bool needCloseSerial,uint32_t availableVersio
     }
 
     bool needUpgradeTool = 0;
+    if(fupdiaglog != NULL)
+    {
+        //delete fupdiaglog;
+        fupdiaglog = NULL;
+    }
 /*
  *  int oldVersion = settings->value("Tool_Version",0).toInt();
 
@@ -1017,6 +1055,18 @@ void MainWindow::ir_button_Slot_connect()
 void MainWindow::sendCmdforUpgradeSlot(uint8_t *buf,int len)
 {
     //qDebug() << "sendCmdforUpgradeSlot";
+    if(!serial.isOpen())
+    {
+        logstr = "serial is not open!";
+        output_log(logstr,1);
+        QMessageBox::StandardButton reply = QMessageBox::warning(this,"Error","Please Open Serial Port First!\n");
+        if(reply == QMessageBox::Ok)
+        {
+            fupdiaglog->reject();
+        }
+
+        return;
+    }
     sendCmd2MCU(buf, len);
 }
 
@@ -1024,7 +1074,7 @@ void MainWindow::getCurrentMcuVersion()
 {
     if(!serial.isOpen())
     {
-        //QMessageBox::warning(this,"Send Error","Please Open Serial Port First!\n");
+        QMessageBox::warning(this,"Error","Please Open Serial Port First!\n");
         qDebug() << "serial is not open,cannot check mcu's version";
         logstr = "serial is not open!";
         output_log(logstr,0);

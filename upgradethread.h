@@ -20,6 +20,7 @@ public:
 signals:
     void finish(bool);
     void getVersionSignal();
+    //void disableFreshVersion(bool);
 
 private:
     bool isSerialReady;

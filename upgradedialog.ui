@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>UpgradeDialog</class>
  <widget class="QDialog" name="UpgradeDialog">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -100,15 +103,37 @@
      <height>21</height>
     </rect>
    </property>
+   <property name="toolTip">
+    <string>Fresh</string>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
    <property name="styleSheet">
-    <string notr="true">border-image: url(:/new/icon/resource-icon/refresh.png);
-background-image: url(:/new/icon/resource-icon/button-light-blue.png);</string>
+    <string notr="true"/>
    </property>
    <property name="text">
     <string/>
    </property>
+   <property name="icon">
+    <iconset>
+     <normalon>:/new/icon/resource-icon/refresh.png</normalon>
+    </iconset>
+   </property>
+   <property name="autoDefault">
+    <bool>true</bool>
+   </property>
+   <property name="default">
+    <bool>false</bool>
+   </property>
+   <property name="flat">
+    <bool>false</bool>
+   </property>
   </widget>
   <widget class="QPushButton" name="upFreshAvailableButton">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>300</x>
@@ -118,11 +143,15 @@ background-image: url(:/new/icon/resource-icon/button-light-blue.png);</string>
     </rect>
    </property>
    <property name="styleSheet">
-    <string notr="true">border-image: url(:/new/icon/resource-icon/refresh.png);
-background-image: url(:/new/icon/resource-icon/button-light-blue.png);</string>
+    <string notr="true"/>
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normalon>:/new/icon/resource-icon/refresh.png</normalon>
+    </iconset>
    </property>
   </widget>
   <widget class="QPushButton" name="upUpgradeButton">
@@ -179,7 +208,7 @@ background-image: url(:/new/icon/resource-icon/button-light-blue.png);</string>
     <rect>
      <x>300</x>
      <y>120</y>
-     <width>23</width>
+     <width>21</width>
      <height>21</height>
     </rect>
    </property>
