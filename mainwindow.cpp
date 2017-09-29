@@ -85,6 +85,7 @@ MainWindow::MainWindow(QWidget *parent) :
     time->setFixedWidth(50);
 
     QListWidgetItem * scriptItem = new QListWidgetItem(ui->atScriptlistWidget);
+    scriptItem->setSizeHint(QSize(190,25));
     scriptItem->setBackgroundColor(Qt::lightGray);
     ui->atScriptlistWidget->setItemWidget(scriptItem,wContainer);
 
@@ -1517,6 +1518,7 @@ void MainWindow::atAddItem2ScriptListWidget(int ir_type,QString button_name,int 
     time->setFixedWidth(50);
 
     QListWidgetItem * scriptItem = new QListWidgetItem(ui->atScriptlistWidget);
+    scriptItem->setSizeHint(QSize(190,24));
     ui->atScriptlistWidget->setItemWidget(scriptItem,wContainer);
 }
 void MainWindow::textChanged_SLOT(const QString &text)
