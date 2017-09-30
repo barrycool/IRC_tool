@@ -369,7 +369,12 @@ void MainWindow::serial_receive_data()
             emit cmdFailSignal();
             return;
         }
-        if(resendCount >= FAIL_RETRY_TIMES)
+        if (frame->msg_parameter[0] == READ_CMD_LIST)
+        {
+            qDebug() <<"all commands are read out from mcu";
+            output_log("NAK: all commands are read out from mcu",1);
+        }
+        /*if(resendCount >= FAIL_RETRY_TIMES)
         {
             //qDebug() << "NAK :cmd not handled correctly";
             qDebug("retry for %d times still NACK,quit!",FAIL_RETRY_TIMES);
@@ -377,9 +382,9 @@ void MainWindow::serial_receive_data()
             resendCount = 0;
             //emit cmdFailSignal();
             return;
-        }
-        qDebug() <<"CMD_NACK,resend :" << resendCount;
-        resendBackupCmd();
+        }*/
+        //qDebug() <<"CMD_NACK,resend :" << resendCount;
+        //resendBackupCmd();
 
     }
     else if(frame->msg == CMD_ACK)
