@@ -454,9 +454,9 @@ void MainWindow::serial_receive_data()
             case IR_TYPE_RC5:
                 memcpy(tmpBuf,ir_item.IR_CMD.IR_RC5.name,MAX_NAME_LEN);
                 break;
-            case IR_TYPE_JVC:
+            /*case IR_TYPE_JVC:
                 memcpy(tmpBuf,ir_item.IR_CMD.IR_JVC.name,MAX_NAME_LEN);
-                break;
+                break;*/
             case IR_TYPE_LEARNING:
                 memcpy(tmpBuf,ir_item.IR_CMD.IR_learning.name,MAX_NAME_LEN);
                 break;
@@ -565,10 +565,10 @@ void MainWindow::printIrItemInfo(IR_item_t ir_item)
             str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_RC5.IR_address,16));
             str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_RC5.IR_command,16));
             break;
-        case IR_TYPE_JVC:
+        /*case IR_TYPE_JVC:
             str.append(ir_item.IR_CMD.IR_JVC.name);
             str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_JVC.IR_address,16));
-            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_JVC.IR_command,16));
+            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_JVC.IR_command,16));*/
                 break;
         case IR_TYPE_LEARNING:
             str.append(ir_item.IR_CMD.IR_learning.name);
@@ -1441,9 +1441,9 @@ void MainWindow::atScriptlistWidgetClicked_slot(QListWidgetItem* item)
         case IR_TYPE_RC5:
             memcpy(tmpBuf,IR_items.at(currentRow-1).IR_CMD.IR_RC5.name,MAX_NAME_LEN);
             break;
-        case IR_TYPE_JVC:
+        /*case IR_TYPE_JVC:
             memcpy(tmpBuf,IR_items.at(currentRow-1).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
-            break;
+            break;*/
         case IR_TYPE_LEARNING:
             memcpy(tmpBuf,IR_items.at(currentRow-1).IR_CMD.IR_learning.name,MAX_NAME_LEN);
             break;
@@ -1486,10 +1486,10 @@ void MainWindow::atAddItem2ScriptListWidget(int ir_type,QString button_name,int 
     {
         islearning = "RC6";
     }
-    else if(ir_type == IR_TYPE_JVC)
+    /*else if(ir_type == IR_TYPE_JVC)
     {
         islearning = "JVC";
-    }
+    }*/
     else
     {
         islearning = "L";
@@ -1568,9 +1568,9 @@ void MainWindow::add_to_list(QString button_name,uint32_t delay)
                 case IR_TYPE_RC5:
                     memcpy(IR_item.IR_CMD.IR_RC5.name,tmpBuf,MAX_NAME_LEN);
                     break;
-                case IR_TYPE_JVC:
+                /*case IR_TYPE_JVC:
                     memcpy(IR_item.IR_CMD.IR_JVC.name,tmpBuf,MAX_NAME_LEN);
-                    break;
+                    break;*/
                 case IR_TYPE_LEARNING:
                     memcpy(IR_item.IR_CMD.IR_learning.name,tmpBuf,MAX_NAME_LEN);
                     break;
@@ -1619,9 +1619,9 @@ void MainWindow::add_to_list(QString button_name,uint32_t delay)
                    case IR_TYPE_RC5:
                        memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_RC5.name,MAX_NAME_LEN);
                        break;
-                   case IR_TYPE_JVC:
+                   /*case IR_TYPE_JVC:
                        memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
-                       break;
+                       break;*/
                    case IR_TYPE_LEARNING:
                        memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_learning.name,MAX_NAME_LEN);
                        break;
@@ -1812,9 +1812,9 @@ void MainWindow::atSaveButton_slot()
                 case IR_TYPE_RC5:
                     memcpy(tmpBuf,IR_items.at(i).IR_CMD.IR_RC5.name,MAX_NAME_LEN);
                     break;
-                case IR_TYPE_JVC:
+                /*case IR_TYPE_JVC:
                     memcpy(tmpBuf,IR_items.at(i).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
-                    break;
+                    break;*/
                 case IR_TYPE_LEARNING:
                     memcpy(tmpBuf,IR_items.at(i).IR_CMD.IR_learning.name,MAX_NAME_LEN);
                     break;
@@ -1892,9 +1892,9 @@ void MainWindow::atRealTimeSendButton_slot()
                 case IR_TYPE_RC5:
                     memcpy(ir_item.IR_CMD.IR_RC5.name,tmpBuf,MAX_NAME_LEN);
                     break;
-                case IR_TYPE_JVC:
+                /*case IR_TYPE_JVC:
                     memcpy(ir_item.IR_CMD.IR_JVC.name,tmpBuf,MAX_NAME_LEN);
-                    break;
+                    break;*/
                 case IR_TYPE_LEARNING:
                     memcpy(ir_item.IR_CMD.IR_learning.name,tmpBuf,MAX_NAME_LEN);
                     break;
@@ -2143,9 +2143,9 @@ void MainWindow::leRealTimeTestButton_slot()
         case IR_TYPE_RC5:
             memcpy(ir_item.IR_CMD.IR_RC5.name,tmpBuf,MAX_NAME_LEN);
             break;
-        case IR_TYPE_JVC:
+        /*case IR_TYPE_JVC:
             memcpy(ir_item.IR_CMD.IR_JVC.name,tmpBuf,MAX_NAME_LEN);
-            break;
+            break;*/
         case IR_TYPE_LEARNING:
             memcpy(ir_item.IR_CMD.IR_learning.name,tmpBuf,MAX_NAME_LEN);
             break;
@@ -2561,9 +2561,9 @@ void MainWindow::on_atUpMove_clicked()
             case IR_TYPE_RC5:
                 memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_RC5.name,MAX_NAME_LEN);
                 break;
-            case IR_TYPE_JVC:
+            /*case IR_TYPE_JVC:
                 memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
-                break;
+                break;*/
             case IR_TYPE_LEARNING:
                 memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_learning.name,MAX_NAME_LEN);
                 break;
@@ -2602,9 +2602,9 @@ void MainWindow::on_atDownMove_clicked()
                 case IR_TYPE_RC5:
                     memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_RC5.name,MAX_NAME_LEN);
                     break;
-                case IR_TYPE_JVC:
+                /*case IR_TYPE_JVC:
                     memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
-                    break;
+                    break;*/
                 case IR_TYPE_LEARNING:
                     memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_learning.name,MAX_NAME_LEN);
                     break;

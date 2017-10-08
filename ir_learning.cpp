@@ -411,7 +411,7 @@ uint8_t IR_encode_NEC(uint8_t waveform[255], uint8_t wave_form_cnt, IR_NEC_t &IR
     return 1;
 }
 
-#define JVC_BIT1_HIGH  5
+/*#define JVC_BIT1_HIGH  5
 #define JVC_BIT1_LOW  16
 #define JVC_BIT0_HIGH  5
 #define JVC_BIT0_LOW  5
@@ -446,7 +446,7 @@ uint8_t IR_encode_JVC(uint8_t waveform[255], uint8_t wave_form_cnt, IR_JVC_t &IR
     }
 
     return 1;
-}
+}*/
 
 #define RC5_DATA_LEN 9
 #define RC5_DOUBLE_DATA_LEN 18
@@ -646,14 +646,14 @@ uint8_t IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
             return 1;
 
     }
-    if (abs(waveform[0] -  JVC_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  JVC_START_BIT_LOW) < LEARNING_PRECISION &&
+    /*if (abs(waveform[0] -  JVC_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  JVC_START_BIT_LOW) < LEARNING_PRECISION &&
              wave_form_cnt == 35)
     {
         //qDebug() << "IR_TYPE_JVC";
         IR_learning_item.IR_type = IR_TYPE_JVC;
         if (IR_encode_JVC(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_JVC))
             return 1;
-    }
+    }*/
 
     IR_learning_item.IR_type = IR_TYPE_LEARNING;
     if (IR_encode_learning(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_learning))
@@ -717,10 +717,10 @@ QString IRLearningItem2String(int nLength)
             m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_RC5.IR_address)).append("-");
             m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_RC5.IR_command));
             break;
-        case IR_TYPE_JVC:
+        /*case IR_TYPE_JVC:
             m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_JVC.IR_address)).append("-");
             m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_JVC.IR_command));
-            break;
+            break;*/
         case IR_TYPE_LEARNING:
             //qDebug() << "IR_learning.bit_data=" << IR_learning_item.IR_CMD.IR_learning.bit_data;
             //qDebug("IR_learning.bit_data=0x%x",IR_learning_item.IR_CMD.IR_learning.bit_data);
@@ -822,7 +822,7 @@ bool String2IRLearningItem(QString src,IR_item_t *learningItem)
                 qDebug() << "format error!";
             }
             break;
-        case IR_TYPE_JVC:
+        /*case IR_TYPE_JVC:
             if(len == 3)
             {
                 learningItem->IR_CMD.IR_JVC.IR_address = list1.at(1).toInt(&ok,16);
@@ -832,7 +832,7 @@ bool String2IRLearningItem(QString src,IR_item_t *learningItem)
             {
                 qDebug() << "format error!";
             }
-            break;
+            break;*/
         case IR_TYPE_LEARNING:
             if(len == 10)
             {
