@@ -209,7 +209,7 @@ void MainWindow::resendBackupCmd()
 void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
 {
     saveCmdAsBackup(buf,len);
-    struct frame_t *frame = (struct frame_t *)buf;
+    //struct frame_t *frame = (struct frame_t *)buf;
 
     if(!serial.isOpen())
     {
@@ -219,11 +219,11 @@ void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
     }
 
 /*------add for debug----------*/
-        QString log = "send packet:len=" +QString::number(len);
+        QString log; //= "send packet:len=" +QString::number(len);
 
         for(uint8_t j = 0; j< len; j++)
         {
-            log += QString(" %1").arg(buf[j]);
+            log +=  QString::asprintf("%02X ", buf[j]); //QString(" %1").arg(buf[j]);
         }
         qDebug() << log;
         output_log(log,0);
@@ -242,21 +242,15 @@ void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
 
     serial.write((char *)buf, len); //marked just for test
 
-    if(frame->msg != CMD_ACK && frame->msg != UPGRADE_FINISH)
+    /*if(frame->msg != CMD_ACK && frame->msg != UPGRADE_FINISH && frame->msg != SEND_UPGRADE_PACKET && frame->msg != UPGRADE_START)
     {
         sendcmd_timer.start(2000);
-    }
-    if(frame->msg == UPGRADE_FINISH)
-    {
-        sendcmd_timer.start(500);
-        //serial.close();
-        //ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
-    }
+    }*/
 }
 void MainWindow::sendcmdTimeout()
 {
     //cmdSemaphore->release();
-    struct frame_t *frame = (struct frame_t *)backupCmdBuffer;
+    /*struct frame_t *frame = (struct frame_t *)backupCmdBuffer;
     if(frame->msg == UPGRADE_FINISH)
     {
         output_log("send UPGRADE_FINISH,500ms timer is triggered!",1);
@@ -264,7 +258,7 @@ void MainWindow::sendcmdTimeout()
         ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
         //QMessageBox::information(this,"Upgrade Finish","Please download the latest Smart_IR Tool by Download/Download MainTool");
         return;
-    }
+    }*/
     if(resendCount > FAIL_RETRY_TIMES)
     {
         qDebug("retry for %d times still Timeout,quit!",FAIL_RETRY_TIMES);
@@ -355,8 +349,8 @@ void MainWindow::serial_receive_data()
 
     for(int j = 0; j< buf_len; j++)
     {
-        log += QString::number(buf[j],10);
-        log += " ";
+        log += QString::asprintf("%02X ", buf[j]); //QString::number(buf[j],10);
+        //log += " ";
     }
     qDebug() << log;
     output_log(log,0);
@@ -364,7 +358,7 @@ void MainWindow::serial_receive_data()
     if(frame->msg == CMD_NACK)
     {
         sendcmd_timer.stop();
-        if (frame->msg_parameter[0] == UPGRADE_START ||frame->msg_parameter[0] == SEND_UPGRADE_PACKET)
+        if (frame->msg_parameter[0] == UPGRADE_START || frame->msg_parameter[0] == SEND_UPGRADE_PACKET || frame->msg_parameter[0] == UPGRADE_FINISH)
         {
             qDebug() <<"CMD_NACK of " << frame->msg_parameter[0];
             emit cmdFailSignal();
@@ -420,7 +414,11 @@ void MainWindow::serial_receive_data()
         {
            ui->atStartButton->setText("Start");
         }
-
+        else if (frame->msg_parameter[0] == UPGRADE_FINISH)
+        {
+            serial.close();
+            ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+        }
     }
     else if (frame->msg == SET_CMD_LIST)
     {

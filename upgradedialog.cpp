@@ -26,6 +26,8 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
     ui->upProgressBar->hide();
     //serial = port;
 
+    qDebug() << "UpgradeDialog";
+
     currentMcuVersion = current;
     availableMcuVersion = available;
     ui->upCurrentlineEdit->setText(QString::number(currentMcuVersion));
@@ -93,9 +95,15 @@ UpgradeDialog::~UpgradeDialog()
     //serial->close();
     qDebug() << "~UpgradeDialog";
     upgrade_flag = 0;
+    delete cmdSemaphore;
+
+    disconnect(this, 0, 0, 0);
+    //disconnect(this,SIGNAL(getVersionSignal()),parent,SLOT(getCurrentMcuVersion()));
+    //disconnect(this,SIGNAL(sendCmdSignal(uint8_t *,int)),parent,SLOT(sendCmdforUpgradeSlot(uint8_t*,int)));
+    //disconnect(parent,SIGNAL(receiveAckSignal(int)),this,SLOT(ackReceivedSlot(int)));
+
     delete ui;
 }
-
 
 void UpgradeDialog::onLookupHost(QHostInfo host)
 {
@@ -429,8 +437,8 @@ void UpgradeDialog::sendUpgradeFinishPacket()
     upgrade_flag = 0;
     //QMessageBox::information(this,"Upgrade Finish","Please download the latest Smart_IR Tool by Download/Download MainTool");
 
-    QMessageBox::StandardButton reply = QMessageBox::information(this,"Upgrade Finish","Please download the latest Smart_IR Tool by Download/Download MainTool");
-    if(reply == QMessageBox::Ok)
+    //QMessageBox::StandardButton reply = QMessageBox::information(this,"Upgrade Finish","Please download the latest Smart_IR Tool by Download/Download MainTool");
+    //if(reply == QMessageBox::Ok)
     {
         emit UpgradeRejected(1,availableMcuVersion);
         reject();
@@ -503,7 +511,7 @@ void UpgradeDialog::ackReceivedSlot(int msg_id)
         ui->upProgressBar->setValue((current_file_length / total_file_length) * 100);
         sendUpgradeBinPacket();
     }
-    /*    //mcu receive UPGRADE_FINISH,it reboot itself,so we cannot receive ack of UPGRADE_FINISH
+    //mcu receive UPGRADE_FINISH,it reboot itself,so we cannot receive ack of UPGRADE_FINISH
     else if(msg_id == UPGRADE_FINISH)
     {
         //upgrade finished
@@ -513,8 +521,6 @@ void UpgradeDialog::ackReceivedSlot(int msg_id)
         QMessageBox::information(this,"Upgrade Finish","ugrade finish,please reset your device!");
         //ui->upProgressBar->hide();
     }
-    */
-
 }
 
 void UpgradeDialog::cmdFailSlot()
