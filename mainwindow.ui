@@ -2542,6 +2542,268 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
      <property name="windowTitle">
       <string>子窗口</string>
      </property>
+     <widget class="QTextEdit" name="TE_wifi_log">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>160</y>
+        <width>691</width>
+        <height>291</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="PB_reboot_wifi">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>130</y>
+        <width>75</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>reboot wifi</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="PB_restore_wifi">
+      <property name="geometry">
+       <rect>
+        <x>510</x>
+        <y>130</y>
+        <width>81</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>restore wifi</string>
+      </property>
+     </widget>
+     <widget class="QGroupBox" name="groupBox">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>201</width>
+        <height>141</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>wifi softAP</string>
+      </property>
+      <widget class="QLineEdit" name="LE_softAP_passwd">
+       <property name="geometry">
+        <rect>
+         <x>60</x>
+         <y>50</y>
+         <width>131</width>
+         <height>20</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>54</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>name</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_2">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>50</y>
+         <width>71</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>passwd</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="LE_softAP_name">
+       <property name="geometry">
+        <rect>
+         <x>60</x>
+         <y>20</y>
+         <width>131</width>
+         <height>20</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="PB_read_wifi_hotpot">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>110</y>
+         <width>75</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>read</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="PB_set_wifi_hotpot">
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>110</y>
+         <width>75</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>set</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="LE_softAP_channel">
+       <property name="geometry">
+        <rect>
+         <x>60</x>
+         <y>80</y>
+         <width>131</width>
+         <height>20</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_3">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>80</y>
+         <width>71</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>channel</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QLineEdit" name="LE_AT_test">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>10</y>
+        <width>211</width>
+        <height>20</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="PB_AT_test">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>40</y>
+        <width>75</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>AT test</string>
+      </property>
+     </widget>
+     <widget class="QGroupBox" name="groupBox_2">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>10</y>
+        <width>161</width>
+        <height>141</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>wifi connect</string>
+      </property>
+      <widget class="QPushButton" name="pushButton_2">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>110</y>
+         <width>61</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>read</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="pushButton_3">
+       <property name="geometry">
+        <rect>
+         <x>90</x>
+         <y>110</y>
+         <width>51</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>set</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_4">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>54</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>procotol:</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBox">
+       <property name="geometry">
+        <rect>
+         <x>80</x>
+         <y>20</y>
+         <width>69</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <item>
+        <property name="text">
+         <string>TCP</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>UDP</string>
+        </property>
+       </item>
+      </widget>
+      <widget class="QLabel" name="label_5">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>50</y>
+         <width>21</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>IP:</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEdit">
+       <property name="geometry">
+        <rect>
+         <x>40</x>
+         <y>50</y>
+         <width>113</width>
+         <height>20</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
     </widget>
    </widget>
   </widget>
@@ -2556,9 +2818,8 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
    </property>
    <widget class="QMenu" name="menuSetting">
     <property name="title">
-     <string>PortSetting</string>
+     <string>COMM</string>
     </property>
-    <addaction name="actionOpenUart"/>
     <addaction name="actionFresh"/>
     <addaction name="actionPort_Setting"/>
    </widget>
@@ -2612,6 +2873,8 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
    <addaction name="actionUser_Manual"/>
    <addaction name="separator"/>
    <addaction name="actionLog"/>
+   <addaction name="separator"/>
+   <addaction name="actionWifiSetting"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionSony">
@@ -2759,8 +3022,20 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
    </property>
   </action>
   <action name="actionWifiSetting">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/new/icon/resource-icon/wifi.png</normaloff>:/new/icon/resource-icon/wifi.png</iconset>
+   </property>
    <property name="text">
     <string>WifiSetting</string>
+   </property>
+  </action>
+  <action name="action_TCP">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>use TCP</string>
    </property>
   </action>
  </widget>

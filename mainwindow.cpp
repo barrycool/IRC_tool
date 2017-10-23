@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QTcpSocket>
 
 #define DEFAULT_BAUDRATE    "115200"
 #define DEFAULT_DATABIT     8
@@ -38,9 +39,18 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(upgradethred,SIGNAL(getVersionSignal()),this,SLOT(getCurrentMcuVersion()));
     upgradethred->start();
 
+    settings = new QSettings("Mediatek","Smart_IR");
+
+    use_TCP.setText("use TCP");
+    use_TCP.setCheckable(true);
+    use_TCP.setChecked(settings->value("use_tcp", 0).toBool());
+    connect(&use_TCP, QAction::triggered, this, on_action_use_tcp);
+    ui->menuSetting->addAction(&use_TCP);
+
     portBox = new QComboBox;
     ui->mainToolBar->insertWidget(ui->actionOpenUart,portBox);
-    settings = new QSettings("Mediatek","Smart_IR");
+
+    portBox->setEnabled(!use_TCP.isChecked());
 
     settings->setValue("Tool_Version",VERSION);
     output_log("setting serial port...",1);
@@ -96,15 +106,98 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(&serial, SIGNAL(readyRead()), this, SLOT(serial_receive_data()));
     sendcmd_timer.setSingleShot(true);
     //cmdSemaphore = new QSemaphore(1);
-    isInit = 1;
 
     connect(ui->atScriptlistWidget, QListWidget::itemClicked, this, on_itemClicked);
+
+    connect(ui->PB_reboot_wifi, QPushButton::clicked, this, on_wifi_setting);
+    connect(ui->PB_restore_wifi, QPushButton::clicked, this, on_wifi_setting);
+    connect(ui->PB_read_wifi_hotpot, QPushButton::clicked, this, on_wifi_setting);
+    connect(ui->PB_set_wifi_hotpot, QPushButton::clicked, this, on_wifi_setting);
+    connect(ui->PB_AT_test, QPushButton::clicked, this, on_wifi_setting);
+
+    connect(&socket, QTcpSocket::readyRead, this, serial_receive_data);
+    connect(&socket, QTcpSocket::stateChanged, this, on_tcp_connect_state);
+
     fupdiaglog = NULL;
+    isInit = 1;
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::on_tcp_connect_state(QAbstractSocket::SocketState state)
+{
+    if (state == QAbstractSocket::ConnectedState)
+    {
+        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_green.png"));
+    }
+    else if (state == QAbstractSocket::UnconnectedState)
+    {
+        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+    }
+}
+
+void MainWindow::on_action_use_tcp(bool selected)
+{
+    settings->setValue("use_tcp", selected);
+    portBox->setEnabled(!use_TCP.isChecked());
+}
+
+void MainWindow::on_wifi_setting()
+{
+    QString cmd;
+
+    QObject * s = sender();
+    if (s->objectName() == "PB_reboot_wifi")
+    {
+        cmd = "AT+RST";
+    }
+    else if (s->objectName() == "PB_restore_wifi")
+    {
+        cmd = "AT+RESTORE";
+    }
+    else if (s->objectName() == "PB_read_wifi_hotpot")
+    {
+        cmd = "AT+CWSAP_DEF?";
+    }
+    else if (s->objectName() == "PB_set_wifi_hotpot")
+    {
+        cmd = QString::asprintf("AT+CWSAP_DEF=\"%s\",\"%s\",%s,4", ui->LE_softAP_name->text().toLatin1().data(),
+                                ui->LE_softAP_passwd->text().toLatin1().data(), ui->LE_softAP_channel->text().toLatin1().data());
+    }
+    else if (s->objectName() == "PB_AT_test")
+    {
+        cmd = ui->LE_AT_test->text();
+    }
+
+    sendwificmd(cmd);
+}
+
+void MainWindow::sendwificmd(QString cmd)
+{
+    uint8_t buf[255];
+
+    cmd += "\r\n";
+
+    struct frame_t *frame = (struct frame_t *)buf;
+
+    frame->header = FRAME_HEADER;
+    frame->data_len = sizeof(struct frame_t);
+    frame->seq_num = seqnum++;
+    frame->msg = SEND_CMD_TO_UART;
+
+    frame->msg_parameter[0] = cmd.size();
+    frame->data_len++;
+
+    strcpy((char*)&frame->msg_parameter[1], cmd.toLatin1().data());
+    frame->data_len += frame->msg_parameter[0];
+
+
+    buf[frame->data_len] = CRC8Software(buf, frame->data_len);
+
+    sendCmd2MCU(buf, frame->data_len+1);
 }
 
 void MainWindow::on_itemClicked(QListWidgetItem * item)
@@ -211,10 +304,33 @@ void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
     saveCmdAsBackup(buf,len);
     //struct frame_t *frame = (struct frame_t *)buf;
 
+    if (use_TCP.isCheckable())
+    {
+        if (socket.isOpen())
+        {
+            socket.write((char *)buf, len);
+            /*------add for debug----------*/
+            QString log; //= "send packet:len=" +QString::number(len);
+
+            for(uint8_t j = 0; j< len; j++)
+            {
+                log +=  QString::asprintf("%02X ", buf[j]); //QString(" %1").arg(buf[j]);
+            }
+            qDebug() << log;
+            output_log(log,0);
+            /*------add for debug----------*/
+        }
+        else
+        {
+            QMessageBox::critical(this, "TCP", "please connect smart IR first!");
+        }
+
+        return;
+    }
+
     if(!serial.isOpen())
     {
-        qDebug() << "serial port is not open";
-        output_log("serial port is not open",1);
+        QMessageBox::critical(this, "serial port", "please connect smart IR first!");
         return;
     }
 
@@ -299,13 +415,22 @@ void MainWindow::sendAck(uint8_t seq_num, uint8_t msg_id)
 
 }
 
+
+
 uint8_t buf[BUF_LEN];
 qint64 buf_len = 0;
 void MainWindow::serial_receive_data()
 {
     QString log;
 
-    buf_len += serial.read((char*)buf + buf_len, BUF_LEN - buf_len);
+    if (use_TCP.isCheckable())
+    {
+        buf_len += socket.read((char*)buf + buf_len, BUF_LEN - buf_len);
+    }
+    else
+    {
+        buf_len += serial.read((char*)buf + buf_len, BUF_LEN - buf_len);
+    }
 
     struct frame_t *frame = (struct frame_t *)buf;
 
@@ -532,6 +657,42 @@ void MainWindow::serial_receive_data()
         output_log(logstr,1);
         ui->atScriptlistWidget->setCurrentRow(frame->msg_parameter[0]+1);
     }
+    else if (frame->msg == RECV_CMD_FROM_UART)
+    {
+        buf[frame->data_len] = 0;
+
+        if (ui->TE_wifi_log->document()->lineCount() >= 200)
+        {
+            ui->TE_wifi_log->clear();
+        }
+
+        QString msg((char*)frame->msg_parameter);
+        ui->TE_wifi_log->append(msg);
+
+        QTextCursor TC = ui->TE_wifi_log->textCursor();
+        TC.movePosition(QTextCursor::End);
+        ui->TE_wifi_log->setTextCursor(TC);
+
+        if (msg.contains("CWSAP_DEF"))
+        {
+            QStringList sects = msg.split(',');
+
+            if (sects.size() >= 3)
+            {
+                QString name = sects[0];
+                name = name.mid(name.indexOf('\"') + 1, name.lastIndexOf('\"') - name.indexOf('\"') - 1);
+                ui->LE_softAP_name->setText(name);
+
+                QString passwd = sects[1];
+                passwd = passwd.mid(passwd.indexOf('\"') + 1, passwd.lastIndexOf('\"') - passwd.indexOf('\"') - 1);
+                ui->LE_softAP_passwd->setText(passwd);
+
+                QString channel = sects[2];
+                ui->LE_softAP_channel->setText(channel);
+            }
+        }
+    }
+
     buf_len = 0;
 }
 
@@ -639,6 +800,21 @@ void MainWindow::on_actionAbout_IRC_triggered()
 
 void MainWindow::on_actionOpenUart_triggered()
 {
+    if (use_TCP.isCheckable())
+    {
+        if (!socket.isOpen())
+        {
+            socket.connectToHost("192.168.4.1", 60001);
+        }
+        else
+        {
+            socket.close();
+        }
+
+        return;
+    }
+
+
     disconnect(portBox,SIGNAL(currentIndexChanged(int)), this, SLOT(portChanged(int)));
     QList<QSerialPortInfo> portList = QSerialPortInfo::availablePorts();
     if (portBox->count()==0)
@@ -1059,7 +1235,7 @@ void MainWindow::ir_button_Slot_connect()
 void MainWindow::sendCmdforUpgradeSlot(uint8_t *buf,int len)
 {
     //qDebug() << "sendCmdforUpgradeSlot";
-    if(!serial.isOpen())
+    /*if(!serial.isOpen())
     {
         logstr = "serial is not open!";
         output_log(logstr,1);
@@ -1070,20 +1246,20 @@ void MainWindow::sendCmdforUpgradeSlot(uint8_t *buf,int len)
         }
 
         return;
-    }
+    }*/
     sendCmd2MCU(buf, len);
 }
 
 void MainWindow::getCurrentMcuVersion()
 {
-    if(!serial.isOpen())
+    /*if(!serial.isOpen())
     {
         QMessageBox::warning(this,"Error","Please Open Serial Port First!\n");
         qDebug() << "serial is not open,cannot check mcu's version";
         logstr = "serial is not open!";
         output_log(logstr,0);
         return;
-    }
+    }*/
 
     uint8_t buf[BUF_LEN];
     memset(buf,0x0,BUF_LEN);
@@ -1842,11 +2018,11 @@ void MainWindow::atSaveButton_slot()
 void MainWindow::atRealTimeSendButton_slot()
 {
 
-    if(!serial.isOpen())
+    /*if(!serial.isOpen())
     {
         QMessageBox::warning(this,"Send Error","Please Open Serial Port First!\n");
         return;
-    }
+    }*/
 
     uint8_t buf[BUF_LEN];
     memset(buf,0x0,BUF_LEN);
@@ -1985,11 +2161,11 @@ void MainWindow::atDownloadButton_slot()
     qDebug() << "Download cmd list to mcu\n";
     output_log("start Download cmd list to mcu...",1);
 
-    if (!serial.isOpen())
+    /*if (!serial.isOpen())
     {
         QMessageBox::critical(this, tr("send data error"), "please open serial port first");
         return;
-    }
+    }*/
 
     clear_cmd_list_handle();
 /*
@@ -2086,11 +2262,11 @@ void MainWindow::leIrPanel_slot()
 void MainWindow::leRealTimeTestButton_slot()
 {
 
-    if(!serial.isOpen())
+    /*if(!serial.isOpen())
     {
         QMessageBox::warning(this,"Send Error","Please Open Serial Port First!\n");
         return;
-    }
+    }*/
 
     IR_item_t ir_item;
     //qDebug() << " sizeof ir_item=  "<<sizeof(IR_item_t);
@@ -2198,12 +2374,12 @@ void MainWindow::leStartRecordButton_slot()
 
     //return ; //just for test
 
-    if(!serial.isOpen())
+    /*if(!serial.isOpen())
     {
         QMessageBox::warning(this,"Port warning","Please Open Serial Port First!\n");
         return;
     }
-    else
+    else*/
     {
         //serial.setBaudRate(QSerialPort::Baud115200);
         //serial.setParity(QSerialPort::NoParity);

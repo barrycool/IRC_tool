@@ -92,5 +92,6 @@
         <file>resource-icon/updater.png</file>
         <file>resource-icon/utilities-system-monitor.png</file>
         <file>resource-icon/MIT smart ir logo.png</file>
+        <file>resource-icon/wifi.png</file>
     </qresource>
 </RCC>

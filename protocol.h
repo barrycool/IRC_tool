@@ -13,7 +13,7 @@
 #define FAIL_RETRY_TIMES    1
 #define IR_devices_MAX  20
 
-#define ANTIROLLBACK_UPGRADE    1
+#define ANTIROLLBACK_UPGRADE    0
 
 #define VERSION 12
 
@@ -147,7 +147,9 @@ enum msg_t {
     STOP_LEARNING,      //0x0e
     START_LEARNING,     //0x0f
     REPORT_SENDING_CMD, //0x10
-    SET_SEND_IDX,
+    SET_SEND_IDX,       //0x11
+    SEND_CMD_TO_UART,   //0x12
+    RECV_CMD_FROM_UART, //0x13
     //SIRCS_CMD_MAX,
 };
 

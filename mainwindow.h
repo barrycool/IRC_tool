@@ -33,6 +33,7 @@
 #include <QSettings>
 #include <windows.h>
 #include "upgradethread.h"
+#include <QTcpSocket>
 
 namespace Ui {
 class MainWindow;
@@ -66,6 +67,7 @@ public:
     ~MainWindow();
 
     //QList ir_slot_List;
+   void sendwificmd(QString cmd);
 
 private slots:
     void on_actionAbout_IRC_triggered();
@@ -154,6 +156,9 @@ private slots:
     void on_actionDownload_SerialDriver_triggered();
     void on_itemClicked(QListWidgetItem * item);
     void on_actionWifiSetting_triggered();
+    void on_wifi_setting();
+    void on_action_use_tcp(bool selected);
+    void on_tcp_connect_state(QAbstractSocket::SocketState state);
 
 signals:
     //void sendsignal();
@@ -166,6 +171,7 @@ signals:
 private:
     Ui::MainWindow *ui;
     QSerialPort serial;
+    QTcpSocket socket;
     QComboBox *portBox;
     struct portSetting_t portSetting;
     ComPort_Setting *fport;
@@ -211,7 +217,7 @@ private:
 
     QSettings *settings;
 
-
+    QAction use_TCP;
 };
 
 #endif // MAINWINDOW_H
