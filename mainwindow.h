@@ -218,6 +218,7 @@ private:
     QSettings *settings;
 
     QAction use_TCP;
+    QAction *SerialPortListQAction;
 };
 
 #endif // MAINWINDOW_H

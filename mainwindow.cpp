@@ -48,9 +48,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->menuSetting->addAction(&use_TCP);
 
     portBox = new QComboBox;
-    ui->mainToolBar->insertWidget(ui->actionOpenUart,portBox);
-
-    portBox->setEnabled(!use_TCP.isChecked());
+    SerialPortListQAction =  ui->mainToolBar->insertWidget(ui->actionOpenUart,portBox);
 
     settings->setValue("Tool_Version",VERSION);
     output_log("setting serial port...",1);
@@ -142,7 +140,23 @@ void MainWindow::on_tcp_connect_state(QAbstractSocket::SocketState state)
 void MainWindow::on_action_use_tcp(bool selected)
 {
     settings->setValue("use_tcp", selected);
-    portBox->setEnabled(!use_TCP.isChecked());
+    SerialPortListQAction->setVisible(!selected);
+
+    if (selected)
+    {
+        if (serial.isOpen())
+        {
+            serial.close();
+            ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+        }
+    }
+    else
+    {
+        if (socket.isOpen())
+            socket.close();
+
+        on_actionOpenUart_triggered();
+    }
 }
 
 void MainWindow::on_wifi_setting()
@@ -304,7 +318,7 @@ void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
     saveCmdAsBackup(buf,len);
     //struct frame_t *frame = (struct frame_t *)buf;
 
-    if (use_TCP.isCheckable())
+    if (use_TCP.isChecked())
     {
         if (socket.isOpen())
         {
@@ -423,7 +437,7 @@ void MainWindow::serial_receive_data()
 {
     QString log;
 
-    if (use_TCP.isCheckable())
+    if (use_TCP.isChecked())
     {
         buf_len += socket.read((char*)buf + buf_len, BUF_LEN - buf_len);
     }
@@ -800,7 +814,7 @@ void MainWindow::on_actionAbout_IRC_triggered()
 
 void MainWindow::on_actionOpenUart_triggered()
 {
-    if (use_TCP.isCheckable())
+    if (use_TCP.isChecked())
     {
         if (!socket.isOpen())
         {
@@ -816,7 +830,6 @@ void MainWindow::on_actionOpenUart_triggered()
 
 
     disconnect(portBox,SIGNAL(currentIndexChanged(int)), this, SLOT(portChanged(int)));
-    QList<QSerialPortInfo> portList = QSerialPortInfo::availablePorts();
     if (portBox->count()==0)
     {
         on_actionFresh_triggered();
