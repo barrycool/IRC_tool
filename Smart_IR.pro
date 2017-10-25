@@ -59,3 +59,5 @@ FORMS += \
 
 RESOURCES += \
     resource.qrc
+
+RC_ICONS += smartIRLogo.ico
