@@ -50,6 +50,11 @@ MainWindow::MainWindow(QWidget *parent) :
     portBox = new QComboBox;
     SerialPortListQAction =  ui->mainToolBar->insertWidget(ui->actionOpenUart,portBox);
 
+    if (use_TCP.isChecked())
+    {
+        SerialPortListQAction->setVisible(false);
+    }
+
     settings->setValue("Tool_Version",VERSION);
     output_log("setting serial port...",1);
     ui->actionPort_Setting->setDisabled(true);//disable uart setting for now
@@ -122,6 +127,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    if (socket.isOpen())
+    {
+        socket.close();
+    }
+
+    if (serial.isOpen())
+    {
+        close();
+    }
+
     delete ui;
 }
 
