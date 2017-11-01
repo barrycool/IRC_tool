@@ -101,6 +101,7 @@ MainWindow::MainWindow(QWidget *parent) :
     scriptItem->setSizeHint(QSize(190,25));
     scriptItem->setBackgroundColor(Qt::lightGray);
     ui->atScriptlistWidget->setItemWidget(scriptItem,wContainer);
+    //ui->atScriptlistWidget->setAcceptDrops(true);
 
     ir_button_Slot_connect();
     //connect(&set_cmd_list_timer, &QTimer::timeout, this, &set_cmd_list_handle);
