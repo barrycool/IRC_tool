@@ -37,7 +37,8 @@ SOURCES += \
     learningwave.cpp \
     upgradedialog.cpp \
     ir_learning.cpp \
-    upgradethread.cpp
+    upgradethread.cpp \
+    sirlistwidget.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -48,7 +49,8 @@ HEADERS += \
     learningwave.h \
     upgradedialog.h \
     ir_learning.h \
-    upgradethread.h
+    upgradethread.h \
+    sirlistwidget.h
 
 FORMS += \
         mainwindow.ui \

@@ -79,7 +79,7 @@ MainWindow::MainWindow(QWidget *parent) :
     loadInsetIrMapTable();
     connect(ui->atCustomerCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_device);
     connect(ui->atDeviceCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_command_list);
-
+/*
     QWidget *wContainer = new QWidget(ui->atScriptlistWidget);
     QHBoxLayout *hLayout = new QHBoxLayout(wContainer);
 
@@ -93,25 +93,40 @@ MainWindow::MainWindow(QWidget *parent) :
     hLayout->addStretch(1);
     hLayout->addWidget(time);
     hLayout->setContentsMargins(5,0,0,5);//关键代码，如果没有很可能显示不出来
-    isLearningKey->setFixedWidth(35);
-    keyName->setFixedWidth(105);
+    isLearningKey->setFixedWidth(38);
+    keyName->setFixedWidth(90);
     time->setFixedWidth(50);
-
     QListWidgetItem * scriptItem = new QListWidgetItem(ui->atScriptlistWidget);
     scriptItem->setSizeHint(QSize(190,25));
+    scriptItem->setToolTip("title");
     scriptItem->setBackgroundColor(Qt::lightGray);
     ui->atScriptlistWidget->setItemWidget(scriptItem,wContainer);
-    //ui->atScriptlistWidget->setAcceptDrops(true);
+*/
+    QString islearning = "Proto";
+    QString keyName = "keyName";
+    QString time = "time";
+    QByteArray ba1 = islearning.toLatin1();
+    QByteArray ba2 = keyName.toLatin1();
+    QByteArray ba3 = time.toLatin1();
+    QString str = QString::asprintf("%-6s%-13s%-6s",ba1.data(),ba2.data(),ba3.data());
+    QListWidgetItem *scriptItem = new QListWidgetItem(str,ui->atScriptlistWidget);
+    scriptItem->setBackgroundColor(Qt::lightGray);
+    scriptItem->setSelected(false);
+    ui->atScriptlistWidget->addItem(scriptItem);
+
+    connect(ui->atScriptlistWidget,SIGNAL(dropIntoSignal(QString,int)),this,SLOT(dropSlotforScriptlw(QString,int)));
+    connect(ui->atScriptlistWidget, QListWidget::itemDoubleClicked, this, on_itemDoubleClicked);
+    connect(ui->atScriptlistWidget, QListWidget::itemClicked, this, on_itemClicked);
+    connect(ui->atScriptlistWidget,SIGNAL(internalMoveSiganl()),this,SLOT(update_IR_items_List()));
+    connect(&click_timer, &QTimer::timeout, this, &click_timer_timeout);
 
     ir_button_Slot_connect();
-    //connect(&set_cmd_list_timer, &QTimer::timeout, this, &set_cmd_list_handle);
 
     connect(&sendcmd_timer, &QTimer::timeout, this, &sendcmdTimeout);
     connect(&serial, SIGNAL(readyRead()), this, SLOT(serial_receive_data()));
     sendcmd_timer.setSingleShot(true);
     //cmdSemaphore = new QSemaphore(1);
 
-    connect(ui->atScriptlistWidget, QListWidget::itemClicked, this, on_itemClicked);
 
     connect(ui->PB_reboot_wifi, QPushButton::clicked, this, on_wifi_setting);
     connect(ui->PB_restore_wifi, QPushButton::clicked, this, on_wifi_setting);
@@ -229,12 +244,176 @@ void MainWindow::sendwificmd(QString cmd)
 
     sendCmd2MCU(buf, frame->data_len+1);
 }
-
-void MainWindow::on_itemClicked(QListWidgetItem * item)
+/*
+bool isSameIRType(IR_type_t type1,QString type2)
 {
-    (void)item;
-    if (ui->atScriptlistWidget->currentRow() != -1)
+    if(type1 >= IR_TYPE_MAX)
     {
+        return false;
+    }
+    else if(type1 == IR_TYPE_SIRCS && type2 == "Sony")
+    {
+        return true;
+    }
+    else if(type1 == IR_TYPE_RC5 && type2 == "RC5")
+    {
+        return true;
+    }
+    else if(type1 == IR_TYPE_RC6 && type2 == "RC6")
+    {
+        return true;
+    }
+    else if(type1 == IR_TYPE_LEARNING && type2 == "L")
+    {
+        return true;
+    }
+    else if(type1 == IR_TYPE_NEC && type2 == "NEC")
+    {
+        return true;
+    }
+    else
+        return false;
+
+}
+*/
+void MainWindow::on_itemDoubleClicked(QListWidgetItem * item)
+{
+    click_timer.stop();
+    bool isOK=0;
+    IR_item_t ir_item;
+    int index = ui->atScriptlistWidget->currentRow();
+    if((index == 0) || (item->toolTip() == "title"))
+    {
+        return;
+    }
+    qDebug() << "before";
+    for(int i=0;i<IR_items.size();i++)
+    {
+        printIrItemInfo(IR_items.at(i));
+    }
+
+    QStringList list = item->text().split(QRegExp("\\W+"), QString::SkipEmptyParts);
+    QByteArray typeba = list.at(0).toLatin1();
+    QByteArray butba = list.at(1).toLatin1();
+    QString newdelay = QInputDialog::getText(NULL, "Input Dialog",
+                                                       "Reset delay time:(ms)",
+                                                       QLineEdit::Normal,
+                                                       list.at(2),
+                                                       &isOK);
+
+    if (!isOK)
+    {
+        newdelay = list.at(2);
+    }
+    else if(newdelay.isEmpty())
+    {
+        newdelay = "5000";
+    }
+
+    uint32_t delaytime = newdelay.toInt();
+    QByteArray delayba = newdelay.toLatin1();
+
+    QString str = QString::asprintf("%-6s%-13s%-6s",typeba.data(),butba.data(),delayba.data());
+    item->setText(str);
+    //update to IR_items list
+    ir_item = IR_items.at(index-1);
+    ir_item.delay_time = delaytime;
+    IR_items.removeAt(index-1);
+    IR_items.insert(index-1,ir_item);
+
+    qDebug() << "after";
+    for(int i=0;i<IR_items.size();i++)
+    {
+        printIrItemInfo(IR_items.at(i));
+    }
+    //update_IR_items_List();
+}
+void MainWindow::update_IR_items_List()
+{
+    //clear IR_items first,then add all item in listwidget to IR_items
+     QString button_name;
+     IR_items.clear();
+     qDebug() << "update_IR_items_List";
+     if(ui->atScriptlistWidget->count() <= 1)
+     {
+         qDebug() << "111";
+         return;
+     }
+     for(int j =1;j < ui->atScriptlistWidget->count();j++)
+     {
+         IR_item_t IR_item;
+         QListWidgetItem *item = ui->atScriptlistWidget->item(j);
+         QStringList list = item->text().split(QRegExp("\\W+"), QString::SkipEmptyParts);
+         if(list.size()<3)
+         {
+             qDebug() << "222";
+             return;
+
+         }
+         IR_item.is_valid = 1;
+         IR_item.delay_time = list.at(2).toInt();
+
+         button_name = list.at(1);
+         qDebug()  << button_name << list.at(2);
+
+         //step1: find the button keyvalue from keymap
+         for(int i =0;i<IR_maps.size();i++)
+         {
+             if(button_name == IR_maps.at(i).name)
+             {
+                 qDebug() << "found button:"<< IR_maps.at(i).name;
+
+                 IR_item.IR_type = IR_maps.at(i).IR_type;
+                 QByteArray ba = IR_maps.at(i).name.toLatin1();
+                 char *tmpBuf = ba.data();
+
+                 if(String2IRLearningItem(IR_maps.at(i).keyValue,&IR_item) != true)
+                 {
+                     qDebug() << "update_IR_items_List fail";
+                     output_log("update_IR_items_List fail",0);
+                 }
+
+                 switch(IR_item.IR_type)
+                 {
+                     case IR_TYPE_SIRCS:
+                         memcpy(IR_item.IR_CMD.IR_SIRCS.name,tmpBuf,MAX_NAME_LEN);
+                         break;
+                     case IR_TYPE_NEC:
+                         memcpy(IR_item.IR_CMD.IR_NEC.name,tmpBuf,MAX_NAME_LEN);
+                         break;
+                     case IR_TYPE_RC6:
+                         memcpy(IR_item.IR_CMD.IR_RC6.name,tmpBuf,MAX_NAME_LEN);
+                         break;
+                     case IR_TYPE_RC5:
+                         memcpy(IR_item.IR_CMD.IR_RC5.name,tmpBuf,MAX_NAME_LEN);
+                         break;
+                     /*case IR_TYPE_JVC:
+                         memcpy(IR_item.IR_CMD.IR_JVC.name,tmpBuf,MAX_NAME_LEN);
+                         break;*/
+                     case IR_TYPE_LEARNING:
+                         memcpy(IR_item.IR_CMD.IR_learning.name,tmpBuf,MAX_NAME_LEN);
+                         break;
+                     default:
+                         break;
+                 }
+             }
+         }
+
+         printIrItemInfo(IR_item);
+         IR_items.append(IR_item);
+
+       }
+
+}
+void MainWindow::click_timer_timeout()
+{
+    click_timer.stop();
+    if (ui->atScriptlistWidget->currentRow() != -1 && ui->atScriptlistWidget->currentRow() != 0)
+    {
+        if(!serial.isOpen())
+        {
+            return;
+        }
         uint8_t buf[255];
 
         struct frame_t *frame = (struct frame_t *)buf;
@@ -251,6 +430,17 @@ void MainWindow::on_itemClicked(QListWidgetItem * item)
 
         sendCmd2MCU(buf, frame->data_len+1);
     }
+}
+void MainWindow::on_itemClicked(QListWidgetItem * item)
+{
+    int row = ui->atScriptlistWidget->row(item);
+    if(row == 0 )
+    {
+        item->setSelected(false);
+        return;
+    }
+    click_timer.start(300);
+
 }
 
 extern bool isUpgradefileDownloaded;
@@ -776,6 +966,7 @@ void MainWindow::printIrItemInfo(IR_item_t ir_item)
         default:
             break;
     }
+    str.append(":" + QString::number(ir_item.delay_time));
     qDebug() << str;
     output_log(str,0);
 }
@@ -1250,7 +1441,7 @@ void MainWindow::ir_button_Slot_connect()
 
 
         QObject::connect(ui->atCustomizeKeyListWidget,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(atCustomizeKeyListWidgetItemClicked_slot(QListWidgetItem*)));
-        QObject::connect(ui->atScriptlistWidget,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(atScriptlistWidgetClicked_slot(QListWidgetItem*)));
+        //QObject::connect(ui->atScriptlistWidget,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(atScriptlistWidgetClicked_slot(QListWidgetItem*)));
 
       /*---------------------lianlian add for log----------------*/
         QObject::connect(ui->logSaveButton,SIGNAL(clicked()),this,SLOT(logSaveButton_slot()));
@@ -1669,6 +1860,22 @@ void MainWindow::atReturnButton_slot()
     ui->atStackedWidget->setCurrentIndex(0);
 
 }
+void MainWindow::dropSlotforScriptlw(QString btnname,int row)
+{
+    bool isOK;
+    /*
+    QString delay = QInputDialog::getText(NULL, "Input Dialog",
+                                               "Set delay time:(ms)",
+                                                QLineEdit::Normal,
+                                               "5000",
+                                               &isOK);
+     */
+    uint32_t delaytime = 5000;
+    qDebug() << "drag into:"<<btnname<<"--"<<delaytime<<"---"<<row;
+    ui->atScriptlistWidget->setCurrentRow(row);
+    add_to_list(btnname,delaytime);
+}
+
 void MainWindow::atAddItem2ScriptListWidget(int ir_type,QString button_name,int delaytime)
 {
     QString cmd_item;
@@ -1706,7 +1913,7 @@ void MainWindow::atAddItem2ScriptListWidget(int ir_type,QString button_name,int 
     {
         cmd_item += "--R";
     }*/
-
+/*
     QWidget *wContainer = new QWidget(ui->atScriptlistWidget);
     QHBoxLayout *hLayout = new QHBoxLayout(wContainer);
 
@@ -1728,6 +1935,16 @@ void MainWindow::atAddItem2ScriptListWidget(int ir_type,QString button_name,int 
     QListWidgetItem * scriptItem = new QListWidgetItem(ui->atScriptlistWidget);
     scriptItem->setSizeHint(QSize(190,24));
     ui->atScriptlistWidget->setItemWidget(scriptItem,wContainer);
+*/
+    //QString str = QString("%4  %10%8").arg(islearning).arg(button_name).arg(sdelaytime);
+    QByteArray ba1 = islearning.toLatin1();
+    QByteArray ba2 = button_name.toLatin1();
+    QByteArray ba3 = sdelaytime.toLatin1();
+    QString str = QString::asprintf("%-6s%-13s%-6s",ba1.data(),ba2.data(),ba3.data());
+    output_log("add:" +str,1);
+    QListWidgetItem *scriptItem = new QListWidgetItem(str,ui->atScriptlistWidget);
+    ui->atScriptlistWidget->addItem(scriptItem);
+    ui->atScriptlistWidget->setCurrentItem(scriptItem); //make KeyMapList always focus on the last item when a new item is added
 }
 void MainWindow::textChanged_SLOT(const QString &text)
 {
@@ -1796,7 +2013,7 @@ void MainWindow::add_to_list(QString button_name,uint32_t delay)
        qDebug() << "ui->atScriptlistWidget->count()" << ui->atScriptlistWidget->count() ;
        int curRow = ui->atScriptlistWidget->currentRow();
        if((ui->atScriptlistWidget->currentRow()==-1)
-               || (ui->atScriptlistWidget->currentRow()==0)
+               /*|| (ui->atScriptlistWidget->currentRow()==0)*/
                || ((ui->atScriptlistWidget->currentRow() + 1) == ui->atScriptlistWidget->count()))
        {
            IR_items.append(IR_item);
@@ -2132,7 +2349,6 @@ void MainWindow::set_cmd_list_handle()
     {
         qDebug() << "cmd list send finished";
         output_log("cmd list send finished",1);
-        //set_cmd_list_timer.stop();
         return;
     }
     qDebug() << "send SET_CMD_LIST to mcu,cmd_index = " <<cmd_index;
@@ -2203,10 +2419,8 @@ void MainWindow::atDownloadButton_slot()
         totalLoopCnt = ui->atTotalLoopCntText->text().toInt();
     }
 */
-    //set_cmd_list_timer.stop();
     cmd_index = 0;
-    //set_cmd_list_timer.start(50);
-    //set_cmd_list_handle();
+
 }
 
 void MainWindow::atStartButton_slot()
@@ -2227,7 +2441,7 @@ void MainWindow::atStartButton_slot()
     }
     else if(ui->atStartButton->text() == "Stop")
     {
-        //set_cmd_list_timer.stop();
+
         qDebug() << "send PAUSE_SEND";
         output_log("pause the loop test.",1);
         frame->msg = PAUSE_SEND;//CLEAR_CMD_LIST;
@@ -2439,8 +2653,6 @@ void MainWindow::leStartRecordButton_slot()
        //QMessageBox::information(this,"Guide","Please press the button on your RemoteController");
        QMessageBox *messageBox=new QMessageBox(QMessageBox::Information,"Guide","Please press the button on your RemoteController",QMessageBox::Close,this);
        messageBox->show();
-       connect(&set_cmd_list_timer,SIGNAL(timeout()),messageBox,SLOT(close()));
-       set_cmd_list_timer.start(1000);
 */
         //open learning wave for debug
         if(ui->leDebugModeCheckBox->isChecked() && this->lw == NULL)

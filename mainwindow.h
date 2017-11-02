@@ -8,6 +8,7 @@
 #include <learningwave.h>
 #include <upgradedialog.h>
 #include <ir_learning.h>
+#include <sirlistwidget.h>
 //#include "upgrade.h"
 
 #include <QtSerialPort/QSerialPort>
@@ -155,10 +156,14 @@ private slots:
 
     void on_actionDownload_SerialDriver_triggered();
     void on_itemClicked(QListWidgetItem * item);
+    void on_itemDoubleClicked(QListWidgetItem * item);
     void on_actionWifiSetting_triggered();
     void on_wifi_setting();
     void on_action_use_tcp(bool selected);
     void on_tcp_connect_state(QAbstractSocket::SocketState state);
+    void dropSlotforScriptlw(QString,int);
+    void update_IR_items_List();
+    void click_timer_timeout();
 
 signals:
     //void sendsignal();
@@ -184,7 +189,7 @@ private:
     QList <IR_map_t> learningkey_maps;
     void setToKeyListWidget(QString);
     void saveToIrMaps(QString);
-    QTimer set_cmd_list_timer;
+    QTimer click_timer;
     int cmd_index;
     void output_log(QString,int);
     //int currentLoopIndex;
