@@ -469,7 +469,7 @@ void MainWindow::httpDowloadFinished(bool flag)
 
             isUpgradefileDownloaded = 1;
 
-            if(availableMcuVersion <= currentMcuVersion)
+            if(availableMcuVersion <= currentMcuVersion || availableMcuVersion ==0 || currentMcuVersion == 0)
             {
                 logstr ="currentMcuVersion is the latest version,no need to upgrade";
                 qDebug() << logstr;
