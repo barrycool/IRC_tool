@@ -93,5 +93,7 @@
         <file>resource-icon/utilities-system-monitor.png</file>
         <file>resource-icon/MIT smart ir logo.png</file>
         <file>resource-icon/wifi.png</file>
+        <file>resource-icon/USB_connect.png</file>
+        <file>resource-icon/wireless_connect.png</file>
     </qresource>
 </RCC>
