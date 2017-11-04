@@ -104,7 +104,7 @@ MainWindow::MainWindow(QWidget *parent) :
 */
     QString islearning = "Proto";
     QString keyName = "keyName";
-    QString time = "time";
+    QString time = "time(ms)";
     QByteArray ba1 = islearning.toLatin1();
     QByteArray ba2 = keyName.toLatin1();
     QByteArray ba3 = time.toLatin1();
@@ -143,11 +143,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    socket.disconnect();
+
     if (socket.isOpen())
     {
         socket.close();
     }
 
+    serial.disconnect();
     if (serial.isOpen())
     {
         close();
@@ -1862,7 +1865,7 @@ void MainWindow::atReturnButton_slot()
 }
 void MainWindow::dropSlotforScriptlw(QString btnname,int row)
 {
-    bool isOK;
+    //bool isOK;
     /*
     QString delay = QInputDialog::getText(NULL, "Input Dialog",
                                                "Set delay time:(ms)",
