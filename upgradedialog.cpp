@@ -25,6 +25,7 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
     ui->setupUi(this);
     ui->upProgressBar->hide();
     //serial = port;
+    this->parent = parent;
 
     qDebug() << "UpgradeDialog";
 
@@ -84,23 +85,18 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
 #else
     ui->upUpgradeButton->setDisabled(false);
 #endif
-    //connect(&serial, SIGNAL(readyRead()), this, SLOT(serial_receive_ack()));
-    //getPortInfoByName(portName);
 }
 
 //int oldPortOpened = 0;
 
 UpgradeDialog::~UpgradeDialog()
 {
-    //serial->close();
     qDebug() << "~UpgradeDialog";
     upgrade_flag = 0;
     delete cmdSemaphore;
 
-    disconnect(this, 0, 0, 0);
-    //disconnect(this,SIGNAL(getVersionSignal()),parent,SLOT(getCurrentMcuVersion()));
-    //disconnect(this,SIGNAL(sendCmdSignal(uint8_t *,int)),parent,SLOT(sendCmdforUpgradeSlot(uint8_t*,int)));
-    //disconnect(parent,SIGNAL(receiveAckSignal(int)),this,SLOT(ackReceivedSlot(int)));
+    this->disconnect();
+    disconnect(parent,SIGNAL(receiveAckSignal(int)),this,SLOT(ackReceivedSlot(int)));
 
     delete ui;
 }

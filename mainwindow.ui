@@ -2769,6 +2769,10 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
     </property>
     <addaction name="actionFresh"/>
     <addaction name="actionPort_Setting"/>
+    <addaction name="separator"/>
+    <addaction name="actionTCP_mode"/>
+    <addaction name="actionUSB_mode"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -2842,8 +2846,8 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
   <action name="actionOpenUart">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/new/icon/resource-icon/ball_yellow.png</normaloff>
-     <normalon>:/new/icon/resource-icon/ball_green.png</normalon>:/new/icon/resource-icon/ball_yellow.png</iconset>
+     <normaloff>:/new/icon/resource-icon/ball_red.png</normaloff>
+     <normalon>:/new/icon/resource-icon/ball_green.png</normalon>:/new/icon/resource-icon/ball_red.png</iconset>
    </property>
    <property name="text">
     <string>OpenPort</string>
@@ -2977,12 +2981,28 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
     <string>WifiSetting</string>
    </property>
   </action>
-  <action name="action_TCP">
+  <action name="actionTCP_mode">
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/new/icon/resource-icon/wireless_connect.png</normaloff>:/new/icon/resource-icon/wireless_connect.png</iconset>
+   </property>
    <property name="text">
-    <string>use TCP</string>
+    <string>TCP mode</string>
+   </property>
+  </action>
+  <action name="actionUSB_mode">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/new/icon/resource-icon/USB_connect.png</normaloff>:/new/icon/resource-icon/USB_connect.png</iconset>
+   </property>
+   <property name="text">
+    <string>USB mode</string>
    </property>
   </action>
  </widget>

@@ -41,16 +41,13 @@ MainWindow::MainWindow(QWidget *parent) :
 
     settings = new QSettings("Mediatek","Smart_IR");
 
-    use_TCP.setText("use TCP");
-    use_TCP.setCheckable(true);
-    use_TCP.setChecked(settings->value("use_tcp", 0).toBool());
-    connect(&use_TCP, QAction::triggered, this, on_action_use_tcp);
-    ui->menuSetting->addAction(&use_TCP);
+    ui->actionTCP_mode->setChecked(settings->value("use_tcp", 0).toBool());
+    ui->actionUSB_mode->setChecked(!settings->value("use_tcp", 0).toBool());
 
     portBox = new QComboBox;
     SerialPortListQAction =  ui->mainToolBar->insertWidget(ui->actionOpenUart,portBox);
 
-    if (use_TCP.isChecked())
+    if (ui->actionTCP_mode->isChecked())
     {
         SerialPortListQAction->setVisible(false);
     }
@@ -104,7 +101,7 @@ MainWindow::MainWindow(QWidget *parent) :
 */
     QString islearning = "Proto";
     QString keyName = "keyName";
-    QString time = "time";
+    QString time = "time(ms)";
     QByteArray ba1 = islearning.toLatin1();
     QByteArray ba2 = keyName.toLatin1();
     QByteArray ba3 = time.toLatin1();
@@ -145,11 +142,13 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    socket.disconnect();
     if (socket.isOpen())
     {
         socket.close();
     }
 
+    serial.disconnect();
     if (serial.isOpen())
     {
         close();
@@ -166,29 +165,7 @@ void MainWindow::on_tcp_connect_state(QAbstractSocket::SocketState state)
     }
     else if (state == QAbstractSocket::UnconnectedState)
     {
-        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
-    }
-}
-
-void MainWindow::on_action_use_tcp(bool selected)
-{
-    settings->setValue("use_tcp", selected);
-    SerialPortListQAction->setVisible(!selected);
-
-    if (selected)
-    {
-        if (serial.isOpen())
-        {
-            serial.close();
-            ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
-        }
-    }
-    else
-    {
-        if (socket.isOpen())
-            socket.close();
-
-        on_actionOpenUart_triggered();
+        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_red.png"));
     }
 }
 
@@ -526,7 +503,7 @@ void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
     saveCmdAsBackup(buf,len);
     //struct frame_t *frame = (struct frame_t *)buf;
 
-    if (use_TCP.isChecked())
+    if (ui->actionTCP_mode->isChecked())
     {
         if (socket.isOpen())
         {
@@ -593,7 +570,7 @@ void MainWindow::sendcmdTimeout()
     {
         output_log("send UPGRADE_FINISH,500ms timer is triggered!",1);
         serial.close();
-        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_red.png"));
         //QMessageBox::information(this,"Upgrade Finish","Please download the latest Smart_IR Tool by Download/Download MainTool");
         return;
     }*/
@@ -645,7 +622,7 @@ void MainWindow::serial_receive_data()
 {
     QString log;
 
-    if (use_TCP.isChecked())
+    if (ui->actionTCP_mode->isChecked())
     {
         buf_len += socket.read((char*)buf + buf_len, BUF_LEN - buf_len);
     }
@@ -764,7 +741,7 @@ void MainWindow::serial_receive_data()
         else if (frame->msg_parameter[0] == UPGRADE_FINISH)
         {
             serial.close();
-            ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+            ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_red.png"));
         }
     }
     else if (frame->msg == SET_CMD_LIST)
@@ -1008,7 +985,7 @@ void MainWindow::portChanged(int index)
     }
     else
     {
-        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_red.png"));
         QMessageBox::information(this,"Warning","Open " + serial.portName()+ "fail:" + serial.error());
     }
 
@@ -1023,7 +1000,7 @@ void MainWindow::on_actionAbout_IRC_triggered()
 
 void MainWindow::on_actionOpenUart_triggered()
 {
-    if (use_TCP.isChecked())
+    if (ui->actionTCP_mode->isChecked())
     {
         if (!socket.isOpen())
         {
@@ -1060,7 +1037,7 @@ void MainWindow::on_actionOpenUart_triggered()
     {
         qDebug() << "serial" << portBox->currentText() <<"is open,close it";
         serial.close();
-        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+        ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_red.png"));
         upgradethred->serialSetReady(false);
         logstr = "serialPort:";
         logstr.append(portBox->currentText()).append("is closed");
@@ -1083,7 +1060,7 @@ void MainWindow::on_actionOpenUart_triggered()
         }
         else
         {
-             ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+             ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_red.png"));
             if(isInit){
                 QMessageBox::information(this,"Warning","Open " + serial.portName()+ " Fail " + serial.error());
             }
@@ -1181,7 +1158,7 @@ void MainWindow::returnfromUpgrade(bool needCloseSerial,uint32_t availableVersio
     if(needCloseSerial)
     {
         //serial.close();
-        //ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_yellow.png"));
+        //ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_red.png"));
         //QMessageBox::information(this,"Upgrade Warning","You NEED to download the latest Smart_IR Tool by Download/Download MainTool ");
     }
 
@@ -1888,7 +1865,7 @@ void MainWindow::dragLeaveEventSlot(int row)
 }
 void MainWindow::dropSlotforScriptlw(QString btnname,int row)
 {
-
+    //bool isOK;
     /*
      * bool isOK;
     QString delay = QInputDialog::getText(NULL, "Input Dialog",
@@ -3238,4 +3215,34 @@ void MainWindow::on_actionDownload_SerialDriver_triggered()
 void MainWindow::on_actionWifiSetting_triggered()
 {
     ui->WifiSetting->showMaximized();
+}
+
+void MainWindow::on_actionTCP_mode_triggered(bool checked)
+{
+    settings->setValue("use_tcp", checked);
+    SerialPortListQAction->setVisible(!checked);
+
+    ui->actionTCP_mode->setChecked(checked);
+    ui->actionUSB_mode->setChecked(!checked);
+
+    if (checked)
+    {
+        if (serial.isOpen())
+        {
+            serial.close();
+            ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_red.png"));
+        }
+    }
+    else
+    {
+        if (socket.isOpen())
+            socket.close();
+
+        on_actionOpenUart_triggered();
+    }
+}
+
+void MainWindow::on_actionUSB_mode_triggered(bool checked)
+{
+    on_actionTCP_mode_triggered(!checked);
 }

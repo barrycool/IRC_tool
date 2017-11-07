@@ -70,6 +70,8 @@ private:
 
     //void doDownload(QUrl fileURL,QFile *dstFile);
     QString dstBinFilePath;
+
+    QWidget *parent;
 };
 
 #endif // UPGRADEDIALOG_H

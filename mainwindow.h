@@ -159,12 +159,15 @@ private slots:
     void on_itemDoubleClicked(QListWidgetItem * item);
     void on_actionWifiSetting_triggered();
     void on_wifi_setting();
-    void on_action_use_tcp(bool selected);
     void on_tcp_connect_state(QAbstractSocket::SocketState state);
     void dropSlotforScriptlw(QString,int);
     void update_IR_items_List();
     void click_timer_timeout();
     void dragLeaveEventSlot(int);
+
+    void on_actionTCP_mode_triggered(bool checked);
+
+    void on_actionUSB_mode_triggered(bool checked);
 
 signals:
     //void sendsignal();
@@ -222,8 +225,6 @@ private:
     void atClearScriptWidgetOnly();
 
     QSettings *settings;
-
-    QAction use_TCP;
     QAction *SerialPortListQAction;
 };
 
