@@ -31,6 +31,7 @@ private:
 signals:
    dropIntoSignal(QString,int);
    internalMoveSiganl();
+   dragLeaveEventSiganl(int);
 };
 
 #endif // SIRLISTWIDGET_H

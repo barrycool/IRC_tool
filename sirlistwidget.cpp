@@ -24,7 +24,7 @@ void SIRListWidget::dragEnterEvent( QDragEnterEvent * event )
 
 void SIRListWidget::dragMoveEvent( QDragMoveEvent * event )
 {
-    qDebug() << "dragMoveEvent";
+    //qDebug() << "dragMoveEvent";
     QListWidget *source = (QListWidget *)((void*)(event->source()));
     if (source && source == this) {
         SIRListWidget *lw = (SIRListWidget *)source;
@@ -50,17 +50,10 @@ void SIRListWidget::dragMoveEvent( QDragMoveEvent * event )
 
 void SIRListWidget::dragLeaveEvent( QDragLeaveEvent * event )
 {
-    qDebug() << "dragLeaveEvent";
+    //qDebug() << "dragLeaveEvent";
     //to do ,delet the item
-    //QListWidget *source = (QListWidget *)((void*)(event->source()));
-    //if (source && source == this) {
-    //  event->setDropAction(Qt::MoveAction);
-    //  event->accept();
-    //}
-    //else
-    //{
-    //  event->dra
-    //}
+    int row = this->currentRow();
+    emit dragLeaveEventSiganl(row);
 }
 
 void SIRListWidget::dropEvent( QDropEvent * event )
@@ -68,7 +61,7 @@ void SIRListWidget::dropEvent( QDropEvent * event )
     QListWidget *source = (QListWidget *)((void*)(event->source()));
     if (source && source == this)
     {
-        qDebug() << "dropEvent,this";
+        //qDebug() << "dropEvent,this";
         /*
         endPos = event->pos();//得到鼠标移动到的坐标
         QListWidgetItem *itemRow = itemAt(endPos);

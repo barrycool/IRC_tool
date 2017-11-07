@@ -79,7 +79,7 @@
         </font>
        </property>
        <property name="dragEnabled">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
        <property name="dragDropOverwriteMode">
         <bool>false</bool>
@@ -1230,25 +1230,6 @@
           <string>ms</string>
          </property>
         </widget>
-        <zorder>atEject</zorder>
-        <zorder>atPower</zorder>
-        <zorder>atHome</zorder>
-        <zorder>atDigitalkeygroupBox</zorder>
-        <zorder>atCommonKeygroupBox</zorder>
-        <zorder>atPlayKeygroupBox</zorder>
-        <zorder>atCustomizeButton</zorder>
-        <zorder>atColorKeygroupBox</zorder>
-        <zorder>atReturnButton</zorder>
-        <zorder>atLoadKeyMapButton</zorder>
-        <zorder>atButtonText</zorder>
-        <zorder>atButtonLable</zorder>
-        <zorder>atAddButton</zorder>
-        <zorder>atRemoveButton</zorder>
-        <zorder>atAddButton</zorder>
-        <zorder>atRemoveButton</zorder>
-        <zorder>atDelayLable</zorder>
-        <zorder>atDelayText</zorder>
-        <zorder>atUintLablems</zorder>
        </widget>
       </widget>
       <widget class="QWidget" name="atStackedWidgetPage1">

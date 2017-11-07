@@ -118,6 +118,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->atScriptlistWidget, QListWidget::itemDoubleClicked, this, on_itemDoubleClicked);
     connect(ui->atScriptlistWidget, QListWidget::itemClicked, this, on_itemClicked);
     connect(ui->atScriptlistWidget,SIGNAL(internalMoveSiganl()),this,SLOT(update_IR_items_List()));
+    connect(ui->atScriptlistWidget,SIGNAL(dragLeaveEventSiganl(int)),this,SLOT(dragLeaveEventSlot(int)));
+
     connect(&click_timer, &QTimer::timeout, this, &click_timer_timeout);
 
     ir_button_Slot_connect();
@@ -1860,10 +1862,35 @@ void MainWindow::atReturnButton_slot()
     ui->atStackedWidget->setCurrentIndex(0);
 
 }
+void MainWindow::dragLeaveEventSlot(int row)
+{
+    qDebug() << "dragLeaveEventSlot:row = " << row;
+    /*
+    qDebug() << "before";
+    for(int i=0;i<IR_items.size();i++)
+    {
+        printIrItemInfo(IR_items.at(i));
+    }
+    */
+    if(row >= 1 )
+    {
+        QListWidgetItem *item = ui->atScriptlistWidget->takeItem(row);
+        delete item;
+        IR_items.removeAt(row-1);
+    }
+    /*
+    qDebug() << "after";
+    for(int i=0;i<IR_items.size();i++)
+    {
+        printIrItemInfo(IR_items.at(i));
+    }
+    */
+}
 void MainWindow::dropSlotforScriptlw(QString btnname,int row)
 {
-    bool isOK;
+
     /*
+     * bool isOK;
     QString delay = QInputDialog::getText(NULL, "Input Dialog",
                                                "Set delay time:(ms)",
                                                 QLineEdit::Normal,

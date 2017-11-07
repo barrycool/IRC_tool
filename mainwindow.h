@@ -164,6 +164,7 @@ private slots:
     void dropSlotforScriptlw(QString,int);
     void update_IR_items_List();
     void click_timer_timeout();
+    void dragLeaveEventSlot(int);
 
 signals:
     //void sendsignal();
