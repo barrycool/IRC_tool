@@ -5,6 +5,10 @@ SIRListWidget::SIRListWidget(QWidget *parent):QListWidget(parent)
     qDebug() << "SIRListWidget create";
     setAcceptDrops(true);
 }
+SIRListWidget::~SIRListWidget()
+{
+
+}
 
 void SIRListWidget::dragEnterEvent( QDragEnterEvent * event )
 {
@@ -50,6 +54,7 @@ void SIRListWidget::dragMoveEvent( QDragMoveEvent * event )
 
 void SIRListWidget::dragLeaveEvent( QDragLeaveEvent * event )
 {
+    (void)event;
     //qDebug() << "dragLeaveEvent";
     //to do ,delet the item
     int row = this->currentRow();
