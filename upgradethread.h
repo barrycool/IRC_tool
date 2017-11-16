@@ -20,7 +20,7 @@ public:
 signals:
     void finish(bool);
     void getVersionSignal();
-    //void disableFreshVersion(bool);
+    void downloadToolFinish();
 
 private:
     bool isSerialReady;

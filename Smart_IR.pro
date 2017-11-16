@@ -62,4 +62,8 @@ FORMS += \
 RESOURCES += \
     resource.qrc
 
-RC_ICONS += smartIRLogo.ico
+LIBS += -lVersion
+
+RC_ICONS = smartIRLogo.ico
+
+#RC_FILE += versionInfo.rc

@@ -35,6 +35,8 @@
 #include <windows.h>
 #include "upgradethread.h"
 #include <QTcpSocket>
+#include<windows.h>
+#include<winver.h>
 
 namespace Ui {
 class MainWindow;
@@ -57,7 +59,11 @@ struct ir_button_slot_t {
   slot_cb_fct buttonSlot;
 };
 */
-
+struct at_panel_Button_t {
+  QPushButton *buttonWidget;
+  bool isEnable;
+  bool canbeCustomized;
+};
 
 class MainWindow : public QMainWindow
 {
@@ -97,8 +103,6 @@ private slots:
     void getCurrentMcuVersion();
     void httpDowloadFinished(bool flag);
     /*-------lianlian add for Learningkey----------------*/
-    void leCustomizeButton_slot();
-    void leReturnButton_slot();
     void leIrPanel_slot();
     void leStartRecordButton_slot();
     void leAddToListButton_slot();
@@ -114,8 +118,6 @@ private slots:
     void atCustomizeKeyListWidgetItemClicked_slot(QListWidgetItem* );
     void atScriptlistWidgetClicked_slot(QListWidgetItem* item);
     void atIrPanel_slot();
-    void atCustomizeButton_slot();
-    void atReturnButton_slot();
     void atAddButton_slot();
     void atRemoveButton_slot();
     void atLoadscriptBut_slot();
@@ -168,6 +170,11 @@ private slots:
     void on_actionTCP_mode_triggered(bool checked);
 
     void on_actionUSB_mode_triggered(bool checked);
+    void checkToolVersion();
+
+    void on_atReturnToList_clicked();
+
+    void on_atTurnToPanel_clicked();
 
 signals:
     //void sendsignal();
@@ -226,6 +233,13 @@ private:
 
     QSettings *settings;
     QAction *SerialPortListQAction;
+    QList <at_panel_Button_t> atbuttonList;
+    void fresh_atIrPanel();
+    void atButtonList_init();
 };
-
+/*
+struct at_panel_Button_t at_panel_Buttons[64]= {
+    {.isEnable = 1, .isCustomized =0},
+};
+*/
 #endif // MAINWINDOW_H

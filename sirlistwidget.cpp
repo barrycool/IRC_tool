@@ -12,7 +12,7 @@ SIRListWidget::~SIRListWidget()
 
 void SIRListWidget::dragEnterEvent( QDragEnterEvent * event )
 {
-    qDebug() << "dragEnterEvent";
+    //qDebug() << "dragEnterEvent";
 
      QListWidget *source = (QListWidget *)((void*)(event->source()));
     if (source && source == this) {
@@ -56,13 +56,14 @@ void SIRListWidget::dragLeaveEvent( QDragLeaveEvent * event )
 {
     (void)event;
     //qDebug() << "dragLeaveEvent";
-    //to do ,delet the item
+    //delet the item
     int row = this->currentRow();
     emit dragLeaveEventSiganl(row);
 }
 
 void SIRListWidget::dropEvent( QDropEvent * event )
 {
+    //qDebug() << "dropEvent";
     QListWidget *source = (QListWidget *)((void*)(event->source()));
     if (source && source == this)
     {

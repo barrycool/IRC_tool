@@ -61,6 +61,26 @@ void UpgradeThread::run()
         return;
     }
 */
+/*
+     //QString srcToolPath = "https://github.com/barrycool/bin/raw/master/MainTool/Smart_IR_v2.0.exe";
+
+     //SHELLEXECUTEINFO  ShExecInfo;
+      ShExecInfo.cbSize  =   sizeof(SHELLEXECUTEINFO);
+      ShExecInfo.fMask   =  SEE_MASK_NOCLOSEPROCESS;
+      ShExecInfo.hwnd  =   NULL;
+      ShExecInfo.lpVerb  =    NULL;
+      ShExecInfo.lpFile   =   L"wget.exe";
+      ShExecInfo.lpParameters  =  L"https://github.com/barrycool/bin/raw/master/MainTool/VersionInfo.ini";
+      ShExecInfo.lpDirectory   =  NULL;
+      ShExecInfo.nShow   =   SW_HIDE;
+      ShExecInfo.hInstApp  =  NULL;
+      ShellExecuteEx(&ShExecInfo);
+
+      //ShellExecute(NULL, L"open", L"wget.exe", NULL, L"D://02_wind//main", SW_SHOW);
+      WaitForSingleObject(ShExecInfo.hProcess,INFINITE);
+
+      emit downloadToolFinish();
+*/
 }
 
 void UpgradeThread::serialSetReady(bool isReady)
