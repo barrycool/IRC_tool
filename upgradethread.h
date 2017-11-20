@@ -16,11 +16,12 @@ public:
     virtual void run();
 
     void serialSetReady(bool isReady);
+    void download_manifestini();
 
 signals:
     void finish(bool);
     void getVersionSignal();
-    void downloadToolFinish();
+    void downloadIniFinish();
 
 private:
     bool isSerialReady;

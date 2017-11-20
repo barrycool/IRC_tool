@@ -13,9 +13,9 @@
 #define FAIL_RETRY_TIMES    1
 #define IR_devices_MAX  20
 
-#define ANTIROLLBACK_UPGRADE    0
+#define ANTIROLLBACK_UPGRADE    1
 
-#define VERSION 21
+#define VERSION 22
 
 
 //#define MINIMUM_MCU_VERSION  20170907

@@ -50,12 +50,12 @@ MainWindow::MainWindow(QWidget *parent) :
     currentMcuVersion = 0;
     availableMcuVersion = 0;
 
-    upgradethred = new UpgradeThread();
-    connect(upgradethred,SIGNAL(finish(bool)),this,SLOT(httpDowloadFinished(bool)));
-    connect(upgradethred,SIGNAL(getVersionSignal()),this,SLOT(getCurrentMcuVersion()));
-    connect(upgradethred,SIGNAL(downloadToolFinish()),this,SLOT(checkToolVersion()));
+    upgradethread = new UpgradeThread();
+    connect(upgradethread,SIGNAL(finish(bool)),this,SLOT(httpDowloadFinished(bool)));
+    connect(upgradethread,SIGNAL(getVersionSignal()),this,SLOT(getCurrentMcuVersion()));
+    connect(upgradethread,SIGNAL(downloadIniFinish()),this,SLOT(checkToolVersion()));
 
-    upgradethred->start();
+    upgradethread->start();
 
     settings = new QSettings("Mediatek","Smart_IR");
 
@@ -180,12 +180,12 @@ void MainWindow::on_tcp_connect_state(QAbstractSocket::SocketState state)
     if (state == QAbstractSocket::ConnectedState)
     {
         ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_green.png"));
-        upgradethred->serialSetReady(true);
+        upgradethread->serialSetReady(true);
     }
     else if (state == QAbstractSocket::UnconnectedState)
     {
         ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_red.png"));
-        upgradethred->serialSetReady(false);
+        upgradethread->serialSetReady(false);
     }
 }
 
@@ -441,62 +441,76 @@ void MainWindow::on_itemClicked(QListWidgetItem * item)
     click_timer.start(300);
 
 }
-
+#define SIR_TOOL_NAME  "Smart_IR.exe"
 extern bool isUpgradefileDownloaded;
 extern bool check_valid_upgrade_bin_version(QString fileName,uint32_t &version, uint32_t &checkSum);
+static bool inihasChecked = 0;
+
 void MainWindow::checkToolVersion()
 {
-    qDebug() <<"checkToolVersion";
     //output_log("latest tool download finished!",1);
-
+    if(inihasChecked == 1)
+    {
+        return;
+    }
+    qDebug() <<"checkToolVersion";
 /* CRC信息和版本信息存储在另外的ini配置文件中，只需下载ini配置文件，判断有新版本后再下载tool*/
     uint32_t xnewVersion;
     uint32_t dnewVersion;
     uint32_t checksum;
     QString appPath = qApp->applicationDirPath();
-    QString szFileName = appPath.append("/Download_files").append("/VersionInfo.ini");
+    QString szFileName = appPath.remove("/debug").remove("/release").append("/manifest.ini");
     QFile file(szFileName);
     if(!file.exists())
     {
-        qDebug()<< "/Download_files/VersionInfo.ini not exsit!";
+        qDebug()<< szFileName  << "  not exsit!";
         return;
     }
 
     //step1: 读ini文件里的version 信息
     QSettings *configIniRead = new QSettings(szFileName, QSettings::IniFormat);
     //将读取到的ini文件保存在QString中，先取值，然后通过toString()函数转换成QString类型
-    QString version = configIniRead->value("version").toString();
-    //QString filename = configIniRead->value("filename").toString();
+    QString version = configIniRead->value("/upgrade/version").toString();
+    QString filename = configIniRead->value("filename").toString();
 
     //打印得到的结果
-    qDebug() << version;
-    //qDebug() << filename;
+    qDebug() << filename << " : " << version;
+    int newVersion = version.toInt();
+
+    inihasChecked = 1;
 
     //step2:判断版本是否比本地更新
-    if(version.toInt() > VERSION)
+    if(filename == SIR_TOOL_NAME && newVersion> VERSION)
     {
-        //step3: 若较新，则下载相应的tool
-        on_actionDownload_MainTool_triggered();
+        //step3: 若较新，询问客户是都要升级，若是则下载相应的tool
+        version.replace("0","");
+        version.insert(1,".");
+        QString logstr ="New version: " + version +" is available,Do you want to Download and Upgrade?";
+        QMessageBox::StandardButton reply = QMessageBox::question(this, "New Version Available ", logstr, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+        if(reply == QMessageBox::Yes)
+        {
+            on_actionDownload_MainTool_triggered();
+        }
+        else
+        {
+            return;
+        }
 
         appPath = qApp->applicationDirPath();
-        szFileName = appPath.append("/Download_files").append("/Smart_IR.exe");
+        szFileName = appPath.append("/Download_files/").append(SIR_TOOL_NAME);
 
-        //step4：下载tool完成后，判断tool的checksum和Version，若OK，则弹框是否升级
+        //step4：下载tool完成后，判断tool的checksum和Version，若OK，则升级
         if(check_valid_upgrade_bin_version(szFileName,dnewVersion,checksum))
         {
+            qDebug() << "dnewVersion : " << dnewVersion;
             QString tmp = QString::number(dnewVersion,16); //10进制转成16进制
             xnewVersion = tmp.toInt();
-            if(xnewVersion == version.toInt())
+            qDebug() << "xnewVersion : " << xnewVersion;
+            if(xnewVersion == newVersion)
             {
-                version.insert(1,".");
-                QString logstr ="New version:" + version +"is available,Do you want to upgrade?";
-                QMessageBox::StandardButton reply = QMessageBox::question(this, "New Version Available ", logstr, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
-                if(reply == QMessageBox::Yes)
-                {
-                    QProcess process(this);
-                    process.startDetached("Updater.exe");
-                    this->close();
-                }
+                QProcess process(this);
+                process.startDetached("Updater.exe");
+                this->close();
             }
             else
             {
@@ -505,54 +519,12 @@ void MainWindow::checkToolVersion()
         }
         else
         {
-            qDebug() << "Downloaded tool is corrupted!";
+            qDebug() << "Downloaded Smart_IR.exe is corrupted!";
         }
     }
+    upgradethread->exit();
+    upgradethread->quit();
     return;
-
-
-/*用另外的工具对exe添加CRC校验，下载整个SmartIR tool，再来判断tool的CRC校验和版本信息
- *  uint32_t dnewVersion;
-    uint32_t xnewVersion;
-    uint32_t checksum;
-    QString appPath = qApp->applicationDirPath();
-    QString szFileName = appPath.append("/Download_files").append("/Smart_IR.exe");
-    QFile *file = new QFile(szFileName);
-    if(!file->exists())
-    {
-        qDebug()<< "/Download_files/Smart_IR.exe not exsit!";
-        return;
-    }
-
-    if(check_valid_upgrade_bin_version(szFileName,dnewVersion,checksum))
-    {
-        QString tmp = QString::number(dnewVersion,16); //10进制转成16进制
-        xnewVersion = tmp.toInt();
-        qDebug()<< "xnewVersion is : " << xnewVersion;
-        if(xnewVersion > VERSION)
-        {
-            QString logstr = "Newer Version of SmartIR tool is available,Do you want to upgrade?";
-            QMessageBox::StandardButton reply = QMessageBox::question(this, "New Version Available ", logstr, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
-            if(reply == QMessageBox::Yes)
-            {
-                QProcess process(this);
-                process.startDetached("Updater.exe");
-                this->close();
-            }
-        }
-        else
-        {
-            output_log("no need to upgrade SmartIR tool",0);
-        }
-    }
-    else
-    {
-        qDebug()<< "/Download_files/Smart_IR.exe is corrupted!";
-        output_log("/Download_files/Smart_IR.exe is corrupted",0);
-        return;
-    }
-*/
-
 /*通过QT在exe中嵌入版本信息，下载tool后读取tool的的版本，没有CRC校验
  *  DWORD dwSize = 0;
     char* lpData = NULL;
@@ -647,6 +619,12 @@ void MainWindow::httpDowloadFinished(bool flag)
                 {
                     emit updateVersionSignal(currentMcuVersion,availableMcuVersion);
                 }
+
+                //if no need upgrade mcu,then check is tool is need to upgrade
+                if(!inihasChecked)
+                {
+                    upgradethread->download_manifestini();
+                }
             }
             else
             {
@@ -657,6 +635,14 @@ void MainWindow::httpDowloadFinished(bool flag)
                      on_actionUpgrade_triggered();
                      return;
                 }
+                else
+                {
+                    //if no need upgrade mcu,then check is tool is need to upgrade
+                    if(!inihasChecked)
+                    {
+                        upgradethread->download_manifestini();
+                    }
+                }
                 qDebug() << logstr;
                 output_log(logstr,1);
             }
@@ -664,13 +650,23 @@ void MainWindow::httpDowloadFinished(bool flag)
         else
         {
             output_log("checksum is error ",1);
+            //if no need upgrade mcu,then check is tool is need to upgrade
+            if(!inihasChecked)
+            {
+                upgradethread->download_manifestini();
+            }
         }
     }
     else
     {
         output_log("cannot find bin ",1);
+        //if no need upgrade mcu,then check is tool is need to upgrade
+        if(!inihasChecked)
+        {
+            upgradethread->download_manifestini();
+        }
     }
-    upgradethred->quit();
+
 }
 
 /*--------Lianlian add for cmd send nack and resend--------*/
@@ -1159,7 +1155,7 @@ void MainWindow::portChanged(int index)
         {
             serial.setPort(info);
             serial.close();//close it first
-            upgradethred->serialSetReady(false);
+            upgradethread->serialSetReady(false);
             Sleep(200);
             break;
         }
@@ -1171,7 +1167,7 @@ void MainWindow::portChanged(int index)
         ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_green.png"));
         serial.setBaudRate(QSerialPort::Baud115200);
         serial.setFlowControl(QSerialPort::NoFlowControl);
-        upgradethred->serialSetReady(true);
+        upgradethread->serialSetReady(true);
     }
     else
     {
@@ -1228,7 +1224,7 @@ void MainWindow::on_actionOpenUart_triggered()
         qDebug() << "serial" << portBox->currentText() <<"is open,close it";
         serial.close();
         ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_red.png"));
-        upgradethred->serialSetReady(false);
+        upgradethread->serialSetReady(false);
         logstr = "serialPort:";
         logstr.append(portBox->currentText()).append("is closed");
         output_log(logstr,1);
@@ -1243,7 +1239,7 @@ void MainWindow::on_actionOpenUart_triggered()
             //serial.setPortName(portBox->currentText());
             serial.setBaudRate(QSerialPort::Baud115200);
             serial.setFlowControl(QSerialPort::NoFlowControl);
-            upgradethred->serialSetReady(true);
+            upgradethread->serialSetReady(true);
             logstr = "serialPort:";
             logstr.append(portBox->currentText()).append("is opened");
             output_log(logstr,1);
@@ -1339,6 +1335,10 @@ void MainWindow::upgradedialog_reject()
         delete fupdiaglog;
         fupdiaglog = NULL;
     }
+    if(!inihasChecked)
+    {
+        upgradethread->download_manifestini();
+    }
 }
 void MainWindow::returnfromUpgrade(bool needCloseSerial,uint32_t availableVersion)
 {
@@ -1352,63 +1352,10 @@ void MainWindow::returnfromUpgrade(bool needCloseSerial,uint32_t availableVersio
         //QMessageBox::information(this,"Upgrade Warning","You NEED to download the latest Smart_IR Tool by Download/Download MainTool ");
     }
 
-    bool needUpgradeTool = 0;
     if(fupdiaglog != NULL)
     {
         //delete fupdiaglog;
         //fupdiaglog = NULL;
-    }
-/*
- *  int oldVersion = settings->value("Tool_Version",0).toInt();
-
-//need reconsider...............
-    if(availableVersion >= 20170907 && oldVersion < 11)
-    {
-        needUpgradeTool = 1;
-    }
-//need reconsider...............
-*/
-    if(needUpgradeTool)
-    {
-        QString appPath = qApp->applicationDirPath();
-        QString fileDir = appPath.append("/Download_files");
-        QDir *dir = new QDir(fileDir);
-        if(!dir->exists())
-        {
-            logstr = fileDir + " doesn't exist";
-            qDebug() << logstr;
-            output_log(logstr,1);
-
-            bool ok = dir->mkdir(fileDir);
-            if( ok )
-            {
-                logstr = "fileDir created success.";
-                qDebug() << logstr;
-                output_log(logstr,0);
-            }
-            else
-            {
-                logstr = "upgrade fail.";
-                qDebug() << logstr;
-                output_log(logstr,1);
-                return;
-            }
-
-        }
-        QString filePath = appPath.append("/Smart_IR.exe");
-        QFile binFile(filePath);
-        if(binFile.exists())
-        {
-            qDebug() << "Smart_IR.exe exsits,delete it first";
-            QFile::remove(filePath);
-        }
-
-        QString srcBinFilePath = "https://github.com/barrycool/bin/raw/master/Smart_IR.exe";
-        QString cmd = "wget -P " + fileDir + " " + srcBinFilePath;
-        system(cmd.toLatin1().data());
-        QProcess process(this);
-        process.startDetached("Updater.exe");
-        this->close();
     }
 }
 void MainWindow::leSetIRDevice(int index)
@@ -3251,9 +3198,9 @@ void MainWindow::on_actionDown_Binary_triggered()
 
 void MainWindow::on_actionDownload_MainTool_triggered()
 {
-    QDesktopServices::openUrl(QUrl("https://github.com/barrycool/bin/tree/master/MainTool"));
+    //QDesktopServices::openUrl(QUrl("https://github.com/barrycool/bin/tree/master/MainTool"));
     //checkToolVersion();
-    return;//for now
+    //return;//for now
 
     QString appPath = qApp->applicationDirPath();
     QString fileDir = appPath.append("/Download_files");
@@ -3288,7 +3235,7 @@ void MainWindow::on_actionDownload_MainTool_triggered()
     }
     else
     {
-        logstr = "download success to " + fileDir.append("Smart_IR.exe");
+        logstr = "download success to " + fileDir.append(SIR_TOOL_NAME);
         output_log(logstr,1);
     }
 }

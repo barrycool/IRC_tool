@@ -219,7 +219,7 @@ private:
     /*---------lianlian add for MCU upgrade---------------*/
     LearningWave *lw;
     UpgradeDialog *fupdiaglog;
-    UpgradeThread *upgradethred;
+    UpgradeThread *upgradethread;
     uint32_t currentMcuVersion;
     uint32_t availableMcuVersion;
     void printIrItemInfo(IR_item_t ir_item);

@@ -27,7 +27,7 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
     //serial = port;
     this->parent = parent;
 
-    qDebug() << "UpgradeDialog";
+    //qDebug() << "UpgradeDialog";
 
     currentMcuVersion = current;
     availableMcuVersion = available;
@@ -91,7 +91,7 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
 
 UpgradeDialog::~UpgradeDialog()
 {
-    qDebug() << "~UpgradeDialog";
+    //qDebug() << "~UpgradeDialog";
     upgrade_flag = 0;
     delete cmdSemaphore;
 
