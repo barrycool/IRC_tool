@@ -12,6 +12,9 @@ int seqnum = 0;
 uint8_t backupCmdBuffer[BUF_LEN];
 int backupCmdBufferLen = 0;
 int resendCount = 1;
+int totalSendCnt = 0;
+int currentSendCnt = 0;
+static int loopcnt = 0;
 /*--------Lianlian add for cmd send nack and resend  end--------*/
 static bool isInit = 0;
 QStringList IR_protocols;// = {"sony"};
@@ -144,6 +147,9 @@ MainWindow::MainWindow(QWidget *parent) :
     sendcmd_timer.setSingleShot(true);
     //cmdSemaphore = new QSemaphore(1);
 
+    totalSendCnt = ui->atSndCntTotaltext->text().toInt();
+    currentSendCnt = 0;
+    loopcnt = 0;
 
     connect(ui->PB_reboot_wifi, QPushButton::clicked, this, on_wifi_setting);
     connect(ui->PB_restore_wifi, QPushButton::clicked, this, on_wifi_setting);
@@ -919,10 +925,16 @@ void MainWindow::serial_receive_data()
         else if (frame->msg_parameter[0] == START_SEND)
         {
             ui->atStartButton->setText("Stop");
+            totalSendCnt = ui->atSndCntTotaltext->text().toInt();
+            currentSendCnt = 0;//ui->atSndCntCurText->text().toInt();
+            loopcnt = 0;
+            ui->atSndCntCurText->setText(QString::number(loopcnt));
         }
         else if (frame->msg_parameter[0] == PAUSE_SEND)
         {
            ui->atStartButton->setText("Start");
+           //loopcnt = 0;
+           ui->atSndCntCurText->setText(QString::number(loopcnt));
         }
         else if (frame->msg_parameter[0] == UPGRADE_FINISH)
         {
@@ -1037,10 +1049,49 @@ void MainWindow::serial_receive_data()
     }
     else if (frame->msg == REPORT_SENDING_CMD)
     {
-        logstr = "current sending cmd: " + QString::asprintf("%d\n", frame->msg_parameter[0]);
+        //totalSendCnt--;
+        if((loopcnt == totalSendCnt) && totalSendCnt!=0) // totalSendCnt=0 means loop forever
+        {
+            //ui->atStartButton->setText("Pause");
+            //atStartButton_slot();
+            output_log("counter is up,pause the loop test.",1);
+            uint8_t buf1[BUF_LEN];
+            memset(buf1,0x0,BUF_LEN);
+            struct frame_t *frame = (struct frame_t *)buf1;
+            frame->data_len = sizeof(struct frame_t);
+            frame->header = FRAME_HEADER;
+            frame->seq_num = seqnum++;
+            frame->msg = PAUSE_SEND;
+            buf1[frame->data_len] = CRC8Software(buf1, frame->data_len);
+            sendCmd2MCU(buf1, frame->data_len + 1);
+            buf_len = 0;
+            return;
+        }
+        currentSendCnt++;
+        int ncmd = IR_items.size();
+        if(ncmd ==0)
+        {
+            logstr = "current sending cmd idx: " + QString::asprintf("%d ; ", frame->msg_parameter[0]) + "loopcnt: " + QString::number(loopcnt+1);
+            atReadPushButton_slot();
+            buf_len = 0;
+            return;
+        }
+        else //if(currentSendCnt % ncmd)
+        {
+            logstr = "current sending cmd idx: " + QString::asprintf("%d ; ", frame->msg_parameter[0]) + "loopcnt: " + QString::number(loopcnt+1);
+
+        }
         qDebug() <<logstr;
         output_log(logstr,1);
+         //loopcnt = currentSendCnt/ncmd + currentSendCnt % ncmd;
+
         ui->atScriptlistWidget->setCurrentRow(frame->msg_parameter[0]+1);
+        ui->atSndCntCurText->setText(QString::number(loopcnt+1));
+        if(currentSendCnt % ncmd == 0)
+        {
+            loopcnt++;
+        }
+
     }
     else if (frame->msg == RECV_CMD_FROM_UART)
     {

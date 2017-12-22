@@ -98,9 +98,9 @@
        <property name="geometry">
         <rect>
          <x>270</x>
-         <y>20</y>
+         <y>30</y>
          <width>121</width>
-         <height>271</height>
+         <height>241</height>
         </rect>
        </property>
        <property name="title">
@@ -246,6 +246,9 @@
         </property>
        </widget>
        <widget class="QLineEdit" name="atButtonText">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
         <property name="geometry">
          <rect>
           <x>0</x>
@@ -372,15 +375,77 @@
         <string>SaveScript</string>
        </property>
       </widget>
-      <zorder>atScriptlistWidget</zorder>
-      <zorder>atButtonGroup</zorder>
-      <zorder>atSetTestDurationGoupbox</zorder>
-      <zorder>atClear</zorder>
-      <zorder>atUpMove</zorder>
-      <zorder>atDownMove</zorder>
-      <zorder>atLoadscriptBut</zorder>
-      <zorder>atSaveButton</zorder>
-      <zorder>atRemoveButton</zorder>
+      <widget class="QLineEdit" name="atSndCntCurText">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>270</x>
+         <y>293</y>
+         <width>41</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>0</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="atSndCntCur">
+       <property name="geometry">
+        <rect>
+         <x>270</x>
+         <y>277</y>
+         <width>51</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Current</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="atSndCntTotaltext">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>330</x>
+         <y>293</y>
+         <width>51</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>10</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="atSndCntTotal">
+       <property name="geometry">
+        <rect>
+         <x>330</x>
+         <y>277</y>
+         <width>31</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Total</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="atSndCntLable">
+       <property name="geometry">
+        <rect>
+         <x>320</x>
+         <y>293</y>
+         <width>16</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>/</string>
+       </property>
+      </widget>
      </widget>
      <widget class="QGroupBox" name="atChooseDevice">
       <property name="geometry">
