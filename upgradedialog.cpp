@@ -27,7 +27,7 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
     //serial = port;
     this->parent = parent;
 
-    qDebug() << "UpgradeDialog";
+    //qDebug() << "UpgradeDialog";
 
     currentMcuVersion = current;
     availableMcuVersion = available;
@@ -91,7 +91,7 @@ UpgradeDialog::UpgradeDialog(QWidget *parent,uint32_t current,uint32_t available
 
 UpgradeDialog::~UpgradeDialog()
 {
-    qDebug() << "~UpgradeDialog";
+    //qDebug() << "~UpgradeDialog";
     upgrade_flag = 0;
     delete cmdSemaphore;
 
@@ -406,6 +406,7 @@ void UpgradeDialog::sendUpgradeFinishPacket()
 {
     uint8_t buf[BUF_LEN];
     memset(buf,0x0,BUF_LEN);
+
      ui->upStatusText->append("Sending finish packet...");
     struct frame_t *frame = (struct frame_t *)buf;
 
@@ -417,7 +418,7 @@ void UpgradeDialog::sendUpgradeFinishPacket()
     buf[frame->data_len] = CRC8Software(buf, frame->data_len);
 
     //cmdSemaphore->acquire();
-
+    qDebug()<< "Sending finish packet...sendCmdSignal";
     emit sendCmdSignal(buf,frame->data_len + 1);
     //serial->write((char*)buf, frame->data_len + 1);
 
@@ -436,6 +437,7 @@ void UpgradeDialog::sendUpgradeFinishPacket()
     //QMessageBox::StandardButton reply = QMessageBox::information(this,"Upgrade Finish","Please download the latest Smart_IR Tool by Download/Download MainTool");
     //if(reply == QMessageBox::Ok)
     {
+          qDebug()<< "Sending finish packet...UpgradeRejected";
         emit UpgradeRejected(1,availableMcuVersion);
         reject();
     }
@@ -464,6 +466,7 @@ void UpgradeDialog::sendUpgradeBinPacket()
 
     read_cnt = fread(buf + frame->data_len, 1, UPGRADE_PACKET_SIZE, upgrade_file);
     //ui->upStatusText->append("read_cnt:" + QString::number(read_cnt));
+    qDebug()<< "sendUpgradeBinPacket:read_cnt="<<read_cnt;
     if (read_cnt == 0)
     {
         ui->upProgressBar->setValue(100);

@@ -12,6 +12,9 @@ int seqnum = 0;
 uint8_t backupCmdBuffer[BUF_LEN];
 int backupCmdBufferLen = 0;
 int resendCount = 1;
+int totalSendCnt = 0;
+int currentSendCnt = 0;
+static int loopcnt = 0;
 /*--------Lianlian add for cmd send nack and resend  end--------*/
 static bool isInit = 0;
 QStringList IR_protocols;// = {"sony"};
@@ -25,19 +28,37 @@ MainWindow::MainWindow(QWidget *parent) :
 {
 
     ui->setupUi(this);
+
     output_log("start...",1);
     output_log("setup ui...",1);
     ui->AgingTestSubWindow->showMaximized();
     ui->actionIRWave->setDisabled(true);
-    //ui->leStackedWidget->setCurrentIndex(0);
+
+    ui->atDelayText->hide();
+    ui->atUintLablems->hide();
+    ui->atButtonText->hide();
+    ui->atDelayLable->hide();
+
     ui->atStackedWidget->setCurrentIndex(1);
+    if(ui->atStackedWidget->currentIndex() == 1)
+    {
+        ui->atAddButton->hide();
+        ui->atRemoveButton->hide();
+    }
+    else
+    {
+        ui->atAddButton->show();
+        ui->atRemoveButton->show();
+    }
     currentMcuVersion = 0;
     availableMcuVersion = 0;
 
-    upgradethred = new UpgradeThread();
-    connect(upgradethred,SIGNAL(finish(bool)),this,SLOT(httpDowloadFinished(bool)));
-    connect(upgradethred,SIGNAL(getVersionSignal()),this,SLOT(getCurrentMcuVersion()));
-    upgradethred->start();
+    upgradethread = new UpgradeThread();
+    connect(upgradethread,SIGNAL(finish(bool)),this,SLOT(httpDowloadFinished(bool)));
+    connect(upgradethread,SIGNAL(getVersionSignal()),this,SLOT(getCurrentMcuVersion()));
+    connect(upgradethread,SIGNAL(downloadIniFinish()),this,SLOT(checkToolVersion()));
+
+    upgradethread->start();
 
     settings = new QSettings("Mediatek","Smart_IR");
 
@@ -115,6 +136,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->atScriptlistWidget, QListWidget::itemDoubleClicked, this, on_itemDoubleClicked);
     connect(ui->atScriptlistWidget, QListWidget::itemClicked, this, on_itemClicked);
     connect(ui->atScriptlistWidget,SIGNAL(internalMoveSiganl()),this,SLOT(update_IR_items_List()));
+    connect(ui->atScriptlistWidget,SIGNAL(dragLeaveEventSiganl(int)),this,SLOT(dragLeaveEventSlot(int)));
+
     connect(&click_timer, &QTimer::timeout, this, &click_timer_timeout);
 
     ir_button_Slot_connect();
@@ -124,6 +147,9 @@ MainWindow::MainWindow(QWidget *parent) :
     sendcmd_timer.setSingleShot(true);
     //cmdSemaphore = new QSemaphore(1);
 
+    totalSendCnt = ui->atSndCntTotaltext->text().toInt();
+    currentSendCnt = 0;
+    loopcnt = 0;
 
     connect(ui->PB_reboot_wifi, QPushButton::clicked, this, on_wifi_setting);
     connect(ui->PB_restore_wifi, QPushButton::clicked, this, on_wifi_setting);
@@ -160,10 +186,12 @@ void MainWindow::on_tcp_connect_state(QAbstractSocket::SocketState state)
     if (state == QAbstractSocket::ConnectedState)
     {
         ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_green.png"));
+        upgradethread->serialSetReady(true);
     }
     else if (state == QAbstractSocket::UnconnectedState)
     {
         ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_red.png"));
+        upgradethread->serialSetReady(false);
     }
 }
 
@@ -419,8 +447,150 @@ void MainWindow::on_itemClicked(QListWidgetItem * item)
     click_timer.start(300);
 
 }
-
+#define SIR_TOOL_NAME  "Smart_IR.exe"
 extern bool isUpgradefileDownloaded;
+extern bool check_valid_upgrade_bin_version(QString fileName,uint32_t &version, uint32_t &checkSum);
+static bool inihasChecked = 0;
+
+void MainWindow::checkToolVersion()
+{
+    //output_log("latest tool download finished!",1);
+    if(inihasChecked == 1)
+    {
+        return;
+    }
+    qDebug() <<"checkToolVersion";
+/* CRC信息和版本信息存储在另外的ini配置文件中，只需下载ini配置文件，判断有新版本后再下载tool*/
+    uint32_t xnewVersion;
+    uint32_t dnewVersion;
+    uint32_t checksum;
+    QString appPath = qApp->applicationDirPath();
+    QString szFileName = appPath.remove("/debug").remove("/release").append("/manifest.ini");
+    QFile file(szFileName);
+    if(!file.exists())
+    {
+        qDebug()<< szFileName  << "  not exsit!";
+        return;
+    }
+
+    //step1: 读ini文件里的version 信息
+    QSettings *configIniRead = new QSettings(szFileName, QSettings::IniFormat);
+    //将读取到的ini文件保存在QString中，先取值，然后通过toString()函数转换成QString类型
+    QString version = configIniRead->value("/upgrade/version").toString();
+    QString filename = configIniRead->value("filename").toString();
+
+    //打印得到的结果
+    qDebug() << filename << " : " << version;
+    int newVersion = version.toInt();
+
+    inihasChecked = 1;
+
+    //step2:判断版本是否比本地更新
+    if(filename == SIR_TOOL_NAME && newVersion> VERSION)
+    {
+        //step3: 若较新，询问客户是都要升级，若是则下载相应的tool
+        version.replace("0","");
+        version.insert(1,".");
+        QString logstr ="New version: " + version +" is available,Do you want to Download and Upgrade?";
+        QMessageBox::StandardButton reply = QMessageBox::question(this, "New Version Available ", logstr, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+        if(reply == QMessageBox::Yes)
+        {
+            on_actionDownload_MainTool_triggered();
+        }
+        else
+        {
+            return;
+        }
+
+        appPath = qApp->applicationDirPath();
+        szFileName = appPath.append("/Download_files/").append(SIR_TOOL_NAME);
+
+        //step4：下载tool完成后，判断tool的checksum和Version，若OK，则升级
+        if(check_valid_upgrade_bin_version(szFileName,dnewVersion,checksum))
+        {
+            qDebug() << "dnewVersion : " << dnewVersion;
+            QString tmp = QString::number(dnewVersion,16); //10进制转成16进制
+            xnewVersion = tmp.toInt();
+            qDebug() << "xnewVersion : " << xnewVersion;
+            if(xnewVersion == newVersion)
+            {
+                QProcess process(this);
+                process.startDetached("Updater.exe");
+                this->close();
+            }
+            else
+            {
+                qDebug() << "version info is not matched!";
+            }
+        }
+        else
+        {
+            qDebug() << "Downloaded Smart_IR.exe is corrupted!";
+        }
+    }
+    upgradethread->exit();
+    upgradethread->quit();
+    return;
+/*通过QT在exe中嵌入版本信息，下载tool后读取tool的的版本，没有CRC校验
+ *  DWORD dwSize = 0;
+    char* lpData = NULL;
+    BOOL bSuccess = FALSE;
+        // #pragma comment(lib,"Version.lib")
+    QString VerisonInfomation;
+    DWORD dwHandle;
+     qDebug() <<"checkToolVersion:" <<szFileName;
+    //获得文件基础信息
+    //--------------------------------------------------------
+    dwSize = GetFileVersionInfoSize(szFileName.toStdWString().c_str(), &dwHandle);
+    if (0 == dwSize)
+    {
+        qDebug()<<"Get GetFileVersionInfoSize error!";
+        return;
+    }
+    lpData = new char[dwSize];
+
+    bSuccess = GetFileVersionInfo(szFileName.toStdWString().c_str(), dwHandle, dwSize, lpData);
+    if (!bSuccess)
+    {
+        qDebug()<<"Get GetFileVersionInfo error!";
+        delete []lpData;
+        return;
+    }
+
+    //获得语言和代码页(language and code page)  //default as 080404b0
+    //VerQueryValue(pBlock,TEXT("\\VarFileInfo\\Translation"),&lpBuffer,&uLen;
+
+    //获得文件版本信息
+    //-----------------------------------------------------
+    LPVOID lpBuffer = NULL;
+    UINT uLen = 0;
+    bSuccess = VerQueryValue(lpData,TEXT("\\StringFileInfo\\080404b0\\FileVersion"),&lpBuffer,&uLen);
+    if (!bSuccess)
+    {
+        qDebug()<<"Get FileVersion error!";
+        delete []lpData;
+        return;
+    }
+    VerisonInfomation = QString::fromUtf16((const unsigned short int *)lpBuffer);
+    qDebug()<<"FileVersion:" << VerisonInfomation;
+    if(VerisonInfomation.toInt() > VERSION)
+    {
+        QString logstr = "Newer Version of SmartIR tool is available,Do you want to upgrade?";
+        QMessageBox::StandardButton reply = QMessageBox::question(this, "New Version Available ", logstr, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+        if(reply == QMessageBox::Yes)
+        {
+            QProcess process(this);
+            process.startDetached("Updater.exe");
+            this->close();
+        }
+    }
+    else
+    {
+        output_log("no need to upgrade smartir tool",0);
+    }
+*/
+}
+
 void MainWindow::httpDowloadFinished(bool flag)
 {
     (void)flag;
@@ -455,6 +625,12 @@ void MainWindow::httpDowloadFinished(bool flag)
                 {
                     emit updateVersionSignal(currentMcuVersion,availableMcuVersion);
                 }
+
+                //if no need upgrade mcu,then check is tool is need to upgrade
+                if(!inihasChecked)
+                {
+                    upgradethread->download_manifestini();
+                }
             }
             else
             {
@@ -465,6 +641,14 @@ void MainWindow::httpDowloadFinished(bool flag)
                      on_actionUpgrade_triggered();
                      return;
                 }
+                else
+                {
+                    //if no need upgrade mcu,then check is tool is need to upgrade
+                    if(!inihasChecked)
+                    {
+                        upgradethread->download_manifestini();
+                    }
+                }
                 qDebug() << logstr;
                 output_log(logstr,1);
             }
@@ -472,13 +656,23 @@ void MainWindow::httpDowloadFinished(bool flag)
         else
         {
             output_log("checksum is error ",1);
+            //if no need upgrade mcu,then check is tool is need to upgrade
+            if(!inihasChecked)
+            {
+                upgradethread->download_manifestini();
+            }
         }
     }
     else
     {
         output_log("cannot find bin ",1);
+        //if no need upgrade mcu,then check is tool is need to upgrade
+        if(!inihasChecked)
+        {
+            upgradethread->download_manifestini();
+        }
     }
-    upgradethred->quit();
+
 }
 
 /*--------Lianlian add for cmd send nack and resend--------*/
@@ -719,7 +913,7 @@ void MainWindow::serial_receive_data()
         }
         else if (frame->msg_parameter[0] == UPGRADE_START ||frame->msg_parameter[0] == SEND_UPGRADE_PACKET)
         {
-            //qDebug() << "receive ack of " << frame->msg_parameter[0];
+            qDebug() << "receive ack of " << frame->msg_parameter[0];
             //Sleep(200);
             emit receiveAckSignal(frame->msg_parameter[0]);
         }
@@ -731,10 +925,16 @@ void MainWindow::serial_receive_data()
         else if (frame->msg_parameter[0] == START_SEND)
         {
             ui->atStartButton->setText("Stop");
+            totalSendCnt = ui->atSndCntTotaltext->text().toInt();
+            currentSendCnt = 0;//ui->atSndCntCurText->text().toInt();
+            loopcnt = 0;
+            ui->atSndCntCurText->setText(QString::number(loopcnt));
         }
         else if (frame->msg_parameter[0] == PAUSE_SEND)
         {
            ui->atStartButton->setText("Start");
+           //loopcnt = 0;
+           ui->atSndCntCurText->setText(QString::number(loopcnt));
         }
         else if (frame->msg_parameter[0] == UPGRADE_FINISH)
         {
@@ -849,10 +1049,49 @@ void MainWindow::serial_receive_data()
     }
     else if (frame->msg == REPORT_SENDING_CMD)
     {
-        logstr = "current sending cmd: " + QString::asprintf("%d\n", frame->msg_parameter[0]);
+        //totalSendCnt--;
+        if((loopcnt == totalSendCnt) && totalSendCnt!=0) // totalSendCnt=0 means loop forever
+        {
+            //ui->atStartButton->setText("Pause");
+            //atStartButton_slot();
+            output_log("counter is up,pause the loop test.",1);
+            uint8_t buf1[BUF_LEN];
+            memset(buf1,0x0,BUF_LEN);
+            struct frame_t *frame = (struct frame_t *)buf1;
+            frame->data_len = sizeof(struct frame_t);
+            frame->header = FRAME_HEADER;
+            frame->seq_num = seqnum++;
+            frame->msg = PAUSE_SEND;
+            buf1[frame->data_len] = CRC8Software(buf1, frame->data_len);
+            sendCmd2MCU(buf1, frame->data_len + 1);
+            buf_len = 0;
+            return;
+        }
+        currentSendCnt++;
+        int ncmd = IR_items.size();
+        if(ncmd ==0)
+        {
+            logstr = "current sending cmd idx: " + QString::asprintf("%d ; ", frame->msg_parameter[0]) + "loopcnt: " + QString::number(loopcnt+1);
+            atReadPushButton_slot();
+            buf_len = 0;
+            return;
+        }
+        else //if(currentSendCnt % ncmd)
+        {
+            logstr = "current sending cmd idx: " + QString::asprintf("%d ; ", frame->msg_parameter[0]) + "loopcnt: " + QString::number(loopcnt+1);
+
+        }
         qDebug() <<logstr;
         output_log(logstr,1);
+         //loopcnt = currentSendCnt/ncmd + currentSendCnt % ncmd;
+
         ui->atScriptlistWidget->setCurrentRow(frame->msg_parameter[0]+1);
+        ui->atSndCntCurText->setText(QString::number(loopcnt+1));
+        if(currentSendCnt % ncmd == 0)
+        {
+            loopcnt++;
+        }
+
     }
     else if (frame->msg == RECV_CMD_FROM_UART)
     {
@@ -967,7 +1206,7 @@ void MainWindow::portChanged(int index)
         {
             serial.setPort(info);
             serial.close();//close it first
-            upgradethred->serialSetReady(false);
+            upgradethread->serialSetReady(false);
             Sleep(200);
             break;
         }
@@ -979,7 +1218,7 @@ void MainWindow::portChanged(int index)
         ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_green.png"));
         serial.setBaudRate(QSerialPort::Baud115200);
         serial.setFlowControl(QSerialPort::NoFlowControl);
-        upgradethred->serialSetReady(true);
+        upgradethread->serialSetReady(true);
     }
     else
     {
@@ -1036,7 +1275,7 @@ void MainWindow::on_actionOpenUart_triggered()
         qDebug() << "serial" << portBox->currentText() <<"is open,close it";
         serial.close();
         ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_red.png"));
-        upgradethred->serialSetReady(false);
+        upgradethread->serialSetReady(false);
         logstr = "serialPort:";
         logstr.append(portBox->currentText()).append("is closed");
         output_log(logstr,1);
@@ -1051,7 +1290,7 @@ void MainWindow::on_actionOpenUart_triggered()
             //serial.setPortName(portBox->currentText());
             serial.setBaudRate(QSerialPort::Baud115200);
             serial.setFlowControl(QSerialPort::NoFlowControl);
-            upgradethred->serialSetReady(true);
+            upgradethread->serialSetReady(true);
             logstr = "serialPort:";
             logstr.append(portBox->currentText()).append("is opened");
             output_log(logstr,1);
@@ -1064,7 +1303,7 @@ void MainWindow::on_actionOpenUart_triggered()
             }
             else
             {
-                QString str = "open seial ";
+                QString str = "open serial ";
                 str.append(portBox->currentText()).append(" fail\n");
                 qDebug() << str;
                 output_log(str,1);
@@ -1147,6 +1386,10 @@ void MainWindow::upgradedialog_reject()
         delete fupdiaglog;
         fupdiaglog = NULL;
     }
+    if(!inihasChecked)
+    {
+        upgradethread->download_manifestini();
+    }
 }
 void MainWindow::returnfromUpgrade(bool needCloseSerial,uint32_t availableVersion)
 {
@@ -1160,63 +1403,10 @@ void MainWindow::returnfromUpgrade(bool needCloseSerial,uint32_t availableVersio
         //QMessageBox::information(this,"Upgrade Warning","You NEED to download the latest Smart_IR Tool by Download/Download MainTool ");
     }
 
-    bool needUpgradeTool = 0;
     if(fupdiaglog != NULL)
     {
         //delete fupdiaglog;
-        fupdiaglog = NULL;
-    }
-/*
- *  int oldVersion = settings->value("Tool_Version",0).toInt();
-
-//need reconsider...............
-    if(availableVersion >= 20170907 && oldVersion < 11)
-    {
-        needUpgradeTool = 1;
-    }
-//need reconsider...............
-*/
-    if(needUpgradeTool)
-    {
-        QString appPath = qApp->applicationDirPath();
-        QString fileDir = appPath.append("/Download_files");
-        QDir *dir = new QDir(fileDir);
-        if(!dir->exists())
-        {
-            logstr = fileDir + " doesn't exist";
-            qDebug() << logstr;
-            output_log(logstr,1);
-
-            bool ok = dir->mkdir(fileDir);
-            if( ok )
-            {
-                logstr = "fileDir created success.";
-                qDebug() << logstr;
-                output_log(logstr,0);
-            }
-            else
-            {
-                logstr = "upgrade fail.";
-                qDebug() << logstr;
-                output_log(logstr,1);
-                return;
-            }
-
-        }
-        QString filePath = appPath.append("/Smart_IR.exe");
-        QFile binFile(filePath);
-        if(binFile.exists())
-        {
-            qDebug() << "Smart_IR.exe exsits,delete it first";
-            QFile::remove(filePath);
-        }
-
-        QString srcBinFilePath = "https://github.com/barrycool/bin/raw/master/Smart_IR.exe";
-        QString cmd = "wget -P " + fileDir + " " + srcBinFilePath;
-        system(cmd.toLatin1().data());
-        QProcess process(this);
-        process.startDetached("Updater.exe");
-        this->close();
+        //fupdiaglog = NULL;
     }
 }
 void MainWindow::leSetIRDevice(int index)
@@ -1288,14 +1478,8 @@ void MainWindow::on_actionAgingTest_triggered()
 
 void MainWindow::ir_button_Slot_connect()
 {
-/*---------------------lianlian add for Upgrade----------------*/
-    // QObject::connect(ui->upDownloadButton,SIGNAL(clicked()),this,SLOT(upDownloadButton_slot()));
-    //QObject::connect(ui->upCancelButton,SIGNAL(clicked()),this,SLOT(upCancelButton_slot()));
-    //QObject::connect(ui->upCheckUpdateButton,SIGNAL(clicked()),this,SLOT(checkForMcuUpgrade()));
 
 /*---------------------lianlian add for LearingKey----------------*/
-    //QObject::connect(ui->leCustomizeButton,SIGNAL(clicked()),this,SLOT(leCustomizeButton_slot()));
-    //QObject::connect(ui->leReturnButton,SIGNAL(clicked()),this,SLOT(leReturnButton_slot()));
 
     QObject::connect(ui->lePower,SIGNAL(clicked()),this,SLOT(leIrPanel_slot()));
     QObject::connect(ui->leHome,SIGNAL(clicked()),this,SLOT(leIrPanel_slot()));
@@ -1373,19 +1557,19 @@ void MainWindow::ir_button_Slot_connect()
 
         QObject::connect(ui->atChanneldown,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
         QObject::connect(ui->atChannelup,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
-        QObject::connect(ui->atVolumdown,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
-        QObject::connect(ui->atVolumup,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atVolumDown,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atVolumUp,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
 
-        QObject::connect(ui->atDigital_0,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
-        QObject::connect(ui->atDigital_1,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
-        QObject::connect(ui->atDigital_2,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
-        QObject::connect(ui->atDigital_3,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
-        QObject::connect(ui->atDigital_4,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
-        QObject::connect(ui->atDigital_5,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
-        QObject::connect(ui->atDigital_6,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
-        QObject::connect(ui->atDigital_7,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
-        QObject::connect(ui->atDigital_8,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
-        QObject::connect(ui->atDigital_9,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atDigital0,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atDigital1,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atDigital2,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atDigital3,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atDigital4,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atDigital5,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atDigital6,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atDigital7,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atDigital8,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atDigital9,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
 
         QObject::connect(ui->atPlay,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
         QObject::connect(ui->atPause,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
@@ -1395,13 +1579,19 @@ void MainWindow::ir_button_Slot_connect()
         QObject::connect(ui->atNext,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
         QObject::connect(ui->atPrev,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
         QObject::connect(ui->atAudio,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
-        QObject::connect(ui->atAutoMute,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atAudioMute,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
         QObject::connect(ui->atDisplay,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
         QObject::connect(ui->atOption,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
         QObject::connect(ui->atSubtitle,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
         QObject::connect(ui->atRecall,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
-        QObject::connect(ui->atCustomizeButton,SIGNAL(clicked()),this,SLOT(atCustomizeButton_slot()));
-        QObject::connect(ui->atReturnButton,SIGNAL(clicked()),this,SLOT(atReturnButton_slot()));
+        QObject::connect(ui->atNetflix,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atRepeat,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atYouTube,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atCustom1,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atCustom2,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+        QObject::connect(ui->atCustom3,SIGNAL(clicked()),this,SLOT(atIrPanel_slot()));
+
+
 /*IR Panel disabled for now */
 
         /*---------------------lianlian add for AgingTest----------------*/
@@ -1413,10 +1603,7 @@ void MainWindow::ir_button_Slot_connect()
         QObject::connect(ui->atRealTimeSendButton,SIGNAL(clicked()),this,SLOT(atRealTimeSendButton_slot()));
         QObject::connect(ui->atDownloadButton,SIGNAL(clicked()),this,SLOT(atDownloadButton_slot()));
         QObject::connect(ui->atStartButton,SIGNAL(clicked()),this,SLOT(atStartButton_slot()));
-        //QObject::connect(ui->atLoadKeyMapButton,SIGNAL(clicked()),this,SLOT(atLoadKeyMapButton_slot()));
         QObject::connect(ui->atReadPushButton,SIGNAL(clicked()),this,SLOT(atReadPushButton_slot()));
-
-
         QObject::connect(ui->atCustomizeKeyListWidget,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(atCustomizeKeyListWidgetItemClicked_slot(QListWidgetItem*)));
         //QObject::connect(ui->atScriptlistWidget,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(atScriptlistWidgetClicked_slot(QListWidgetItem*)));
 
@@ -1431,7 +1618,7 @@ void MainWindow::ir_button_Slot_connect()
 /*---------------------lianlian add for Upgrade----------------*/
 void MainWindow::sendCmdforUpgradeSlot(uint8_t *buf,int len)
 {
-    //qDebug() << "sendCmdforUpgradeSlot";
+    qDebug() << "sendCmdforUpgradeSlot";
     /*if(!serial.isOpen())
     {
         logstr = "serial is not open!";
@@ -1687,7 +1874,10 @@ void MainWindow::set_IR_command_list()
     file->close();
     delete file;
     file = NULL;
-
+    if(ui->atStackedWidget->currentIndex()==0)
+    {
+        fresh_atIrPanel();
+    }
     settings->setValue("CustomerIdx",ui->atCustomerCombox->currentIndex());
     settings->setValue("DeviceIdx",ui->atDeviceCombox->currentIndex());
 }
@@ -1826,21 +2016,36 @@ void MainWindow::atScriptlistWidgetClicked_slot(QListWidgetItem* item)
     QString buttonName = QString(QLatin1String(tmpBuf));
     ui->atButtonText->setText(/*QString(QLatin1String(*/buttonName);
 }
-void MainWindow::atCustomizeButton_slot()
+
+void MainWindow::dragLeaveEventSlot(int row)
 {
-    ui->atStackedWidget->setCurrentIndex(1);
-
-}
-
-void MainWindow::atReturnButton_slot()
-{
-    ui->atStackedWidget->setCurrentIndex(0);
-
+    qDebug() << "dragLeaveEventSlot:row = " << row;
+    /*
+    qDebug() << "before";
+    for(int i=0;i<IR_items.size();i++)
+    {
+        printIrItemInfo(IR_items.at(i));
+    }
+    */
+    if(row >= 1 )
+    {
+        QListWidgetItem *item = ui->atScriptlistWidget->takeItem(row);
+        delete item;
+        IR_items.removeAt(row-1);
+    }
+    /*
+    qDebug() << "after";
+    for(int i=0;i<IR_items.size();i++)
+    {
+        printIrItemInfo(IR_items.at(i));
+    }
+    */
 }
 void MainWindow::dropSlotforScriptlw(QString btnname,int row)
 {
     //bool isOK;
     /*
+     * bool isOK;
     QString delay = QInputDialog::getText(NULL, "Input Dialog",
                                                "Set delay time:(ms)",
                                                 QLineEdit::Normal,
@@ -2035,26 +2240,33 @@ void MainWindow::add_to_list(QString button_name,uint32_t delay)
 
 void MainWindow::atAddButton_slot()
 {
-
-    if(ui->atCustomizeKeyListWidget->currentRow()== -1)
-    {
-        qDebug()<< "No key has been chosen!";
-        //output_log(logstr,1);
-        //return;
-        ui->atCustomizeKeyListWidget->setCurrentRow(0);
-    }
-//step1:add to listWidget
-    QString str = ui->atCustomizeKeyListWidget->currentItem()->text();
-
-    QStringList list1 = str.split("     ");
-    if(ui->atScriptlistWidget->count() >=20 )
+    if(ui->atScriptlistWidget->count() >=40 )
     {
         logstr = "Can not add more then 20 cmds!";
         qDebug() << logstr;
         output_log(logstr,1);
         return;
     }
-    add_to_list(list1.at(1),ui->atDelayText->text().toInt());
+    if(ui->atStackedWidget->currentIndex() == 0)
+    {
+        add_to_list(ui->atButtonText->text(),ui->atDelayText->text().toInt());
+    }
+    else
+    {
+        if(ui->atCustomizeKeyListWidget->currentRow()== -1)
+        {
+            qDebug()<< "No key has been chosen!";
+            //output_log(logstr,1);
+            //return;
+            ui->atCustomizeKeyListWidget->setCurrentRow(0);
+        }
+    //step1:add to listWidget
+        QString str = ui->atCustomizeKeyListWidget->currentItem()->text();
+
+        QStringList list1 = str.split("     ");
+
+        add_to_list(list1.at(1),ui->atDelayText->text().toInt());
+    }
 }
 
 void MainWindow::atRemoveButton_slot()
@@ -2444,32 +2656,6 @@ void MainWindow::output_log(const QString log,int flag)
 }
 
 /*---------------------lianlian add for LearningKey----------------*/
-
-void MainWindow::leReturnButton_slot()
-{
-    //ui->leStackedWidget->setCurrentIndex(0);
-
-}
-void MainWindow::leCustomizeButton_slot()
-{
-    //ui->leStackedWidget->setCurrentIndex(0);
-    /*---just for test----
-
-    uint8_t tmp[10]={0x00,0x11,0x22,0x3C,0x4d,0x5e,0x6f,0x7a,0xb8,0x99};
-
-    QString butname = ui->leButtonText->text();
-
-    QString tmpkey = byteArray2String(tmp);
-    ui->leKeyTextEdit->setText(tmpkey);
-
-    if(lw != NULL){
-        lw->setWaveData(butname,tmp);
-        emit send2learningwave();
-    }
-    else
-        qDebug() <<"learning wave ui is not open";
-    ---just for test----*/
-}
 
 void MainWindow::leIrPanel_slot()
 {
@@ -3056,9 +3242,9 @@ void MainWindow::on_actionDown_Binary_triggered()
 
 void MainWindow::on_actionDownload_MainTool_triggered()
 {
-    QDesktopServices::openUrl(QUrl("https://github.com/barrycool/bin/tree/master/MainTool"));
-
-    return;//for now
+    //QDesktopServices::openUrl(QUrl("https://github.com/barrycool/bin/tree/master/MainTool"));
+    //checkToolVersion();
+    //return;//for now
 
     QString appPath = qApp->applicationDirPath();
     QString fileDir = appPath.append("/Download_files");
@@ -3085,7 +3271,7 @@ void MainWindow::on_actionDownload_MainTool_triggered()
         }
 
     }
-    QString srcBinFilePath = "https://github.com/barrycool/bin/raw/master/Smart_IR.exe";
+    QString srcBinFilePath = "https://github.com/barrycool/bin/raw/master/MainTool/Smart_IR.exe";
     QString cmd = "wget -N -P " + fileDir + " "+ srcBinFilePath;
     if(system(cmd.toLatin1().data()))
     {
@@ -3093,7 +3279,7 @@ void MainWindow::on_actionDownload_MainTool_triggered()
     }
     else
     {
-        logstr = "download success to " + fileDir.append("Smart_IR.exe");
+        logstr = "download success to " + fileDir.append(SIR_TOOL_NAME);
         output_log(logstr,1);
     }
 }
@@ -3212,3 +3398,256 @@ void MainWindow::on_actionUSB_mode_triggered(bool checked)
 {
     on_actionTCP_mode_triggered(!checked);
 }
+
+void MainWindow::on_atReturnToList_clicked()
+{
+    ui->atStackedWidget->setCurrentIndex(1);
+    ui->atAddButton->hide();
+    ui->atRemoveButton->hide();
+}
+void MainWindow::on_atTurnToPanel_clicked()
+{
+    ui->atStackedWidget->setCurrentIndex(0);
+    ui->atAddButton->show();
+    ui->atRemoveButton->show();
+    fresh_atIrPanel();
+}
+void MainWindow::atButtonList_init()
+{
+    QList<QPushButton *> buttons = ui->atStackedWidgetPage0->findChildren<QPushButton *>();
+    for(int i=0;i<buttons.size();i++)
+    {
+        //qDebug() << "findChildren:" << buttons.at(i)->toolTip();
+        at_panel_Button_t button;
+        QPushButton *tmp = buttons.at(i);
+        if(tmp == ui->atReturnToList)
+        {
+            continue;
+        }
+        button.buttonWidget = buttons.at(i);
+        button.canbeCustomized = false;
+        if(tmp==ui->atCustom1 || tmp==ui->atCustom2 || tmp==ui->atCustom3
+         ||tmp==ui->atRepeat || tmp==ui->atYouTube || tmp==ui->atNetflix
+         ||tmp==ui->atAudio || tmp==ui->atAudioMute || tmp==ui->atSubtitle
+         ||tmp==ui->atDisplay ||tmp==ui->atVolumDown||tmp==ui->atVolumUp)
+        {
+           //qDebug() << "canbeCustomized = true";
+           button.canbeCustomized = true;
+        }
+        button.isEnable = false;
+        atbuttonList.append(button);
+    }
+}
+
+void MainWindow::fresh_atIrPanel()
+{
+    atButtonList_init();
+    qDebug() << "fresh_atIrPanel";
+    bool hasfound = false;
+    bool takeit = false;
+    QPushButton *but;
+    int i,j;
+    for(i=0;i<IR_maps.size();i++)
+    {
+        QString btnname = IR_maps.at(i).name;
+        hasfound = false;
+        for(j =0;j<atbuttonList.size();j++)
+        {
+            but = atbuttonList.at(j).buttonWidget;
+            if(btnname == but->toolTip())
+            {
+                hasfound = true;
+                at_panel_Button_t atBtn = atbuttonList.at(j);
+                atBtn.isEnable = true;
+                atbuttonList.replace(j,atBtn);
+            }
+        }
+        if(!hasfound)
+        {
+            qDebug() << btnname << "is not found!customizing...";
+
+            for(j=0;j<atbuttonList.size();j++)
+            {
+                but = atbuttonList.at(j).buttonWidget;
+                takeit = false;
+                if(but == ui->atCustom1 && ui->atCustom1->isEnabled() == false)
+                {
+                    qDebug() << "Custom1";
+                    ui->atCustom1->setText(btnname);
+                    ui->atCustom1->setToolTip(btnname);
+                    ui->atCustom1->setEnabled(true);
+                    //atbuttonList.at(j).isEnable = true;
+                    takeit = true;
+                    break;
+                }
+                else if(but == ui->atCustom2 && ui->atCustom2->isEnabled() == false)
+                {
+                    qDebug() << "Custom2";
+                    ui->atCustom2->setText(btnname);
+                    ui->atCustom2->setToolTip(btnname);
+                    ui->atCustom2->setEnabled(true);
+                    //atbuttonList.at(j).isEnable = true;
+
+                    takeit = true;
+                    break;
+                }
+                else if(but == ui->atCustom3 && ui->atCustom3->isEnabled() == false)
+                {
+                    qDebug() << "Custom3";
+                    ui->atCustom3->setText(btnname);
+                    ui->atCustom3->setToolTip(btnname);
+                    ui->atCustom3->setEnabled(true);
+                    //atbuttonList.at(j).isEnable = true;
+
+                    takeit = true;
+                    break;
+                }
+                else if(atbuttonList.at(j).isEnable == false && atbuttonList.at(j).canbeCustomized)
+                {
+                    qDebug() << "others";
+                    atbuttonList.at(j).buttonWidget->setText(btnname);
+                    atbuttonList.at(j).buttonWidget->setToolTip(btnname);
+                    //atbuttonList.at(j).isEnable = true;
+                    takeit = true;
+                    break;
+                }
+            }
+            if(takeit)
+            {
+                at_panel_Button_t atBtn = atbuttonList.at(j);
+                atBtn.isEnable = true;
+                atBtn.canbeCustomized = false;
+                atbuttonList.replace(j,atBtn);
+            }
+            else
+            {
+                qDebug() << btnname << " has to be dropped!";
+                output_log(btnname + " has to be dropped!",1);
+            }
+        }
+    }
+    for(i=0;i<atbuttonList.size();i++)
+    {
+        but = atbuttonList.at(i).buttonWidget;
+        if(!atbuttonList.at(i).isEnable)
+        {
+            but->setDisabled(true);
+            if(!but->styleSheet().isEmpty())
+            {
+                //qDebug()<< but->toolTip() << "has style sheet";
+                but->setStyleSheet(QString::null);
+                if(but == ui->atRed)
+                {
+                   ui->atRed->setText("R");
+                }
+                else if(but == ui->atGreen)
+                {
+                    ui->atGreen->setText("G");
+                }
+                else if(but == ui->atYellow)
+                {
+                    ui->atYellow->setText("Y");
+                }
+                else if(but == ui->atBlue)
+                {
+                    ui->atBlue->setText("B");
+                }
+                else if(but == ui->atPower)
+                {
+                    ui->atPower->setText("P");
+                }
+                else
+                {
+                    but->setText(but->toolTip());
+                }
+            }
+
+        }
+        else
+        {
+            but->setEnabled(true);
+
+            if(but == ui->atRed)
+            {
+                ui->atRed->setStyleSheet("QPushButton{background-image: url(:/new/icon/resource-icon/button-red.png);image: url(:/new/icon/resource-icon/button-red.png)}");
+            }
+            if(but == ui->atGreen)
+            {
+                ui->atGreen->setStyleSheet("QPushButton{background-image: url(:/new/icon/resource-icon/button-green.png);image: url(:/new/icon/resource-icon/button-green.png)}");
+            }
+            if(but == ui->atYellow)
+            {
+                ui->atYellow->setStyleSheet("QPushButton{image: url(:/new/icon/resource-icon/button-yellow.png);background-image: url(:/new/icon/resource-icon/button-yellow.png)}");
+            }
+            if(but == ui->atBlue)
+            {
+                ui->atBlue->setStyleSheet("QPushButton{background-image: url(:/new/icon/resource-icon/button-blue.png);image: url(:/new/icon/resource-icon/button-blue.png)}");
+            }
+            if(but == ui->atUp)
+            {
+                ui->atUp->setText("");
+                ui->atUp->setStyleSheet("QPushButton{border-image: url(:/new/icon/resource-icon/sign-up-icon.png);image: url(:/new/icon/resource-icon/sign-up-icon.png)}");
+            }
+            if(but == ui->atDown)
+            {
+                ui->atDown->setText("");
+                ui->atDown->setStyleSheet("QPushButton{border-image: url(:/new/icon/resource-icon/sign-down-icon.png);image: url(:/new/icon/resource-icon/sign-down-icon.png)}");
+            }
+            if(but == ui->atRight)
+            {
+                ui->atRight->setText("");
+                ui->atRight->setStyleSheet("QPushButton{border-image: url(:/new/icon/resource-icon/sign-right-icon.png);image: url(:/new/icon/resource-icon/sign-right-icon.png)}");
+            }
+            if(but == ui->atLeft)
+            {
+                ui->atLeft->setText("");
+                ui->atLeft->setStyleSheet("QPushButton{border-image: url(:/new/icon/resource-icon/sign-left-icon.png);image: url(:/new/icon/resource-icon/sign-left-icon.png)}");
+            }
+            if(but == ui->atPower)
+            {
+                ui->atPower->setText("");
+                ui->atPower->setStyleSheet("QPushButton{background-image: url(:/new/icon/resource-icon/shut_down.png);image: url(:/new/icon/resource-icon/shut_down.png)}");
+            }
+            if(but == ui->atEnter)
+            {
+                ui->atEnter->setStyleSheet("QPushButton{border-image: url(:/new/icon/resource-icon/turquoise_button.png)}");
+            }
+            if(but == ui->atPlay)
+            {
+                ui->atPlay->setText("");
+                ui->atPlay->setStyleSheet("QPushButton{background-image: url(:/new/icon/resource-icon/play48.png);image: url(:/new/icon/resource-icon/play48.png)}");
+            }
+            if(but == ui->atPause)
+            {
+                ui->atPause->setText("");
+                ui->atPause->setStyleSheet("QPushButton{background-image: url(:/new/icon/resource-icon/pause48.png);image: url(:/new/icon/resource-icon/pause48.png)}");
+            }
+            if(but == ui->atStop)
+            {
+                ui->atStop->setText("");
+                ui->atStop->setStyleSheet("QPushButton{background-image: url(:/new/icon/resource-icon/stop23.png);image: url(:/new/icon/resource-icon/stop23.png)}");
+            }
+            if(but == ui->atFastforward)
+            {
+                ui->atFastforward->setText("");
+                ui->atFastforward->setStyleSheet("QPushButton{background-image: url(:/new/icon/resource-icon/fast_forward.png);image: url(:/new/icon/resource-icon/fast_forward.png)}");
+            }
+            if(but == ui->atFastReverse)
+            {
+                ui->atFastReverse->setText("");
+                ui->atFastReverse->setStyleSheet("QPushButton{background-image: url(:/new/icon/resource-icon/rewind.png);image: url(:/new/icon/resource-icon/rewind.png)}");
+            }
+            if(but == ui->atNext)
+            {
+                ui->atNext->setText("");
+                ui->atNext->setStyleSheet("QPushButton{background-image: url(:/new/icon/resource-icon/fast_forward.png);image: url(:/new/icon/resource-icon/next48png.png)}");
+            }
+            if(but == ui->atPrev)
+            {
+                ui->atPrev->setText("");
+                ui->atPrev->setStyleSheet("QPushButton{background-image: url(:/new/icon/resource-icon/fast_forward.png);image: url(:/new/icon/resource-icon/previous.png)}");
+            }
+        }
+    }
+}
+

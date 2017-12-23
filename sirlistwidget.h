@@ -16,7 +16,7 @@ class SIRListWidget : public QListWidget
     Q_OBJECT
 public:
     SIRListWidget(QWidget *parent);
-
+    ~SIRListWidget();
 protected:
    void mousePressEvent(QMouseEvent *event);
    void mouseMoveEvent(QMouseEvent *event);
@@ -31,6 +31,7 @@ private:
 signals:
    dropIntoSignal(QString,int);
    internalMoveSiganl();
+   dragLeaveEventSiganl(int);
 };
 
 #endif // SIRLISTWIDGET_H
