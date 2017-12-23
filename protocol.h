@@ -28,6 +28,7 @@ enum IR_type_t {
   IR_TYPE_RC5,
   IR_TYPE_JVC,  //JVC is deleted by barry 20171008
   IR_TYPE_LEARNING,
+  IR_TYPE_LEARNING_160,
 
   IR_TYPE_MAX
 };
@@ -89,6 +90,22 @@ struct IR_learning_t{
   char name[16];
 };
 
+struct IR_learning_160_t{
+  uint64_t bit_data;
+  uint32_t bit_data_ext_32[3];
+
+  uint8_t bit_number;
+
+  uint8_t header_high;
+  uint8_t header_low;
+
+  uint8_t pluse_width[IR_LEARNING_PLUSE_CNT];
+
+  uint8_t repeate_cnt;
+
+  char name[13];
+};
+
 union IR_CMD_t{
   struct IR_SIRCS_t IR_SIRCS;
   struct IR_NEC_t IR_NEC;
@@ -96,6 +113,7 @@ union IR_CMD_t{
   struct IR_RC5_t IR_RC5;
   //struct IR_JVC_t IR_JVC;
   struct IR_learning_t IR_learning;
+  struct IR_learning_160_t IR_learning_160;
 };
 
 struct IR_item_t {

@@ -2481,13 +2481,6 @@ void MainWindow::leIrPanel_slot()
 
 void MainWindow::leRealTimeTestButton_slot()
 {
-
-    /*if(!serial.isOpen())
-    {
-        QMessageBox::warning(this,"Send Error","Please Open Serial Port First!\n");
-        return;
-    }*/
-
     IR_item_t ir_item;
     //qDebug() << " sizeof ir_item=  "<<sizeof(IR_item_t);
     memset(&ir_item,0x0,sizeof(IR_item_t));
@@ -2502,7 +2495,7 @@ void MainWindow::leRealTimeTestButton_slot()
         btnkey = ui->leKeyTextEdit->text();
     }
     else
-    {   
+    {
         QString str = ui->leKeymaplistWidget->currentItem()->text();
         QStringList list1 = str.split(':');
         bool ok;
