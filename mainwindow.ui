@@ -2822,7 +2822,7 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
        <rect>
         <x>0</x>
         <y>160</y>
-        <width>691</width>
+        <width>701</width>
         <height>291</height>
        </rect>
       </property>
@@ -2830,8 +2830,8 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
      <widget class="QPushButton" name="PB_reboot_wifi">
       <property name="geometry">
        <rect>
-        <x>430</x>
-        <y>130</y>
+        <x>520</x>
+        <y>40</y>
         <width>75</width>
         <height>23</height>
        </rect>
@@ -2843,8 +2843,8 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
      <widget class="QPushButton" name="PB_restore_wifi">
       <property name="geometry">
        <rect>
-        <x>510</x>
-        <y>130</y>
+        <x>610</x>
+        <y>40</y>
         <width>81</width>
         <height>23</height>
        </rect>
@@ -2966,7 +2966,7 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
        <rect>
         <x>430</x>
         <y>10</y>
-        <width>211</width>
+        <width>261</width>
         <height>20</height>
        </rect>
       </property>
@@ -2984,24 +2984,70 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
        <string>AT test</string>
       </property>
      </widget>
-     <widget class="QGroupBox" name="groupBox_2">
+     <widget class="QGroupBox" name="groupBox_4">
       <property name="geometry">
        <rect>
         <x>220</x>
         <y>10</y>
-        <width>161</width>
+        <width>201</width>
         <height>141</height>
        </rect>
       </property>
       <property name="title">
-       <string>wifi connect</string>
+       <string>connect router</string>
       </property>
-      <widget class="QPushButton" name="pushButton_2">
+      <widget class="QLabel" name="label_12">
        <property name="geometry">
         <rect>
          <x>10</x>
+         <y>20</y>
+         <width>31</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>name</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_13">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>50</y>
+         <width>41</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>passwd</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="LE_route_name">
+       <property name="geometry">
+        <rect>
+         <x>60</x>
+         <y>20</y>
+         <width>131</width>
+         <height>20</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="LE_route_passwd">
+       <property name="geometry">
+        <rect>
+         <x>60</x>
+         <y>50</y>
+         <width>131</width>
+         <height>20</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="PB_read_router_passwd">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
          <y>110</y>
-         <width>61</width>
+         <width>75</width>
          <height>23</height>
         </rect>
        </property>
@@ -3009,73 +3055,17 @@ image: url(:/new/icon/resource-icon/button-blue.png);</string>
         <string>read</string>
        </property>
       </widget>
-      <widget class="QPushButton" name="pushButton_3">
+      <widget class="QPushButton" name="PB_set_router_passwd">
        <property name="geometry">
         <rect>
-         <x>90</x>
+         <x>110</x>
          <y>110</y>
-         <width>51</width>
+         <width>75</width>
          <height>23</height>
         </rect>
        </property>
        <property name="text">
         <string>set</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_4">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>20</y>
-         <width>54</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>procotol:</string>
-       </property>
-      </widget>
-      <widget class="QComboBox" name="comboBox">
-       <property name="geometry">
-        <rect>
-         <x>80</x>
-         <y>20</y>
-         <width>69</width>
-         <height>22</height>
-        </rect>
-       </property>
-       <item>
-        <property name="text">
-         <string>TCP</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>UDP</string>
-        </property>
-       </item>
-      </widget>
-      <widget class="QLabel" name="label_5">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>50</y>
-         <width>21</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>IP:</string>
-       </property>
-      </widget>
-      <widget class="QLineEdit" name="lineEdit">
-       <property name="geometry">
-        <rect>
-         <x>40</x>
-         <y>50</y>
-         <width>113</width>
-         <height>20</height>
-        </rect>
        </property>
       </widget>
      </widget>

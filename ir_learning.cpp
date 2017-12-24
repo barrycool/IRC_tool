@@ -911,10 +911,10 @@ uint8_t IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
         }
     }
 
-    IR_learning_item.IR_type = IR_TYPE_LEARNING_160;
+    /*IR_learning_item.IR_type = IR_TYPE_LEARNING_160;
     IR_learning_item.IR_CMD.IR_learning_160.repeate_cnt = 3;
     if (IR_encode_learning_160(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_learning_160))
-        return 1;
+        return 1;*/
 
     //QMessageBox::critical(NULL, "unspoorted IR protocol", "unspoorted IR protocol");
 

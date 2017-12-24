@@ -113,7 +113,7 @@ union IR_CMD_t{
   struct IR_RC5_t IR_RC5;
   //struct IR_JVC_t IR_JVC;
   struct IR_learning_t IR_learning;
-  struct IR_learning_160_t IR_learning_160;
+  //struct IR_learning_160_t IR_learning_160;
 };
 
 struct IR_item_t {

@@ -156,6 +156,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->PB_read_wifi_hotpot, QPushButton::clicked, this, on_wifi_setting);
     connect(ui->PB_set_wifi_hotpot, QPushButton::clicked, this, on_wifi_setting);
     connect(ui->PB_AT_test, QPushButton::clicked, this, on_wifi_setting);
+    connect(ui->PB_set_router_passwd, QPushButton::clicked, this, on_wifi_setting);
+    connect(ui->PB_read_router_passwd, QPushButton::clicked, this, on_wifi_setting);
 
     connect(&socket, QTcpSocket::readyRead, this, serial_receive_data);
     connect(&socket, QTcpSocket::stateChanged, this, on_tcp_connect_state);
@@ -220,6 +222,15 @@ void MainWindow::on_wifi_setting()
     else if (s->objectName() == "PB_AT_test")
     {
         cmd = ui->LE_AT_test->text();
+    }
+    else if (s->objectName() == "PB_read_router_passwd")
+    {
+        cmd = "AT+CWJAP_DEF?";
+    }
+    else if (s->objectName() == "PB_set_router_passwd")
+    {
+        cmd = QString::asprintf("AT+CWJAP_DEF=\"%s\",\"%s\"", ui->LE_route_name->text().toLatin1().data(),
+                                ui->LE_route_passwd->text().toLatin1().data());
     }
 
     sendwificmd(cmd);
@@ -481,7 +492,7 @@ void MainWindow::checkToolVersion()
 
     //打印得到的结果
     qDebug() << filename << " : " << version;
-    int newVersion = version.toInt();
+    uint32_t newVersion = version.toUInt();
 
     inihasChecked = 1;
 
@@ -3535,7 +3546,7 @@ void MainWindow::fresh_atIrPanel()
             if(!but->styleSheet().isEmpty())
             {
                 //qDebug()<< but->toolTip() << "has style sheet";
-                but->setStyleSheet(QString::null);
+                but->setStyleSheet(QString());
                 if(but == ui->atRed)
                 {
                    ui->atRed->setText("R");
