@@ -468,123 +468,16 @@ extern bool check_valid_upgrade_bin_version(QString fileName,uint32_t &version, 
 static bool inihasChecked = 0;
 void MainWindow::maintoolNeedUpdate_slot(QString version)
 {
-<<<<<<< HEAD
+
     QString logstr ="New version: " + version +" is available,Do you want to Upgrade?";
     QMessageBox::StandardButton reply = QMessageBox::question(this, "New Version Available ", logstr, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
     if(reply == QMessageBox::Yes)
-=======
-    //output_log("latest tool download finished!",1);
-    if(inihasChecked == 1)
-    {
-        return;
-    }
-    qDebug() <<"checkToolVersion";
-/* CRC信息和版本信息存储在另外的ini配置文件中，只需下载ini配置文件，判断有新版本后再下载tool*/
-    uint32_t xnewVersion;
-    uint32_t dnewVersion;
-    uint32_t checksum;
-    QString appPath = qApp->applicationDirPath();
-    QString szFileName = appPath.remove("/debug").remove("/release").append("/manifest.ini");
-    QFile file(szFileName);
-    if(!file.exists())
-    {
-        qDebug()<< szFileName  << "  not exsit!";
-        return;
-    }
-
-    //step1: 读ini文件里的version 信息
-    QSettings *configIniRead = new QSettings(szFileName, QSettings::IniFormat);
-    //将读取到的ini文件保存在QString中，先取值，然后通过toString()函数转换成QString类型
-    QString version = configIniRead->value("/upgrade/version").toString();
-    QString filename = configIniRead->value("filename").toString();
-
-    //打印得到的结果
-    qDebug() << filename << " : " << version;
-    uint32_t newVersion = version.toUInt();
-
-    inihasChecked = 1;
-
-    //step2:判断版本是否比本地更新
-    if(filename == SIR_TOOL_NAME && newVersion> VERSION)
-    {
-        //step3: 若较新，询问客户是都要升级，若是则下载相应的tool
-        version.replace("0","");
-        version.insert(1,".");
-        QString logstr ="New version: " + version +" is available,Do you want to Download and Upgrade?";
-        QMessageBox::StandardButton reply = QMessageBox::question(this, "New Version Available ", logstr, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
-        if(reply == QMessageBox::Yes)
-        {
-            on_actionDownload_MainTool_triggered();
-        }
-        else
-        {
-            return;
-        }
-
-        appPath = qApp->applicationDirPath();
-        szFileName = appPath.append("/Download_files/").append(SIR_TOOL_NAME);
-
-        //step4：下载tool完成后，判断tool的checksum和Version，若OK，则升级
-        if(check_valid_upgrade_bin_version(szFileName,dnewVersion,checksum))
-        {
-            qDebug() << "dnewVersion : " << dnewVersion;
-            QString tmp = QString::number(dnewVersion,16); //10进制转成16进制
-            xnewVersion = tmp.toInt();
-            qDebug() << "xnewVersion : " << xnewVersion;
-            if(xnewVersion == newVersion)
-            {
-                QProcess process(this);
-                process.startDetached("Updater.exe");
-                this->close();
-            }
-            else
-            {
-                qDebug() << "version info is not matched!";
-            }
-        }
-        else
-        {
-            qDebug() << "Downloaded Smart_IR.exe is corrupted!";
-        }
-    }
-    upgradethread->exit();
-    upgradethread->quit();
-    return;
-/*通过QT在exe中嵌入版本信息，下载tool后读取tool的的版本，没有CRC校验
- *  DWORD dwSize = 0;
-    char* lpData = NULL;
-    BOOL bSuccess = FALSE;
-        // #pragma comment(lib,"Version.lib")
-    QString VerisonInfomation;
-    DWORD dwHandle;
-     qDebug() <<"checkToolVersion:" <<szFileName;
-    //获得文件基础信息
-    //--------------------------------------------------------
-    dwSize = GetFileVersionInfoSize(szFileName.toStdWString().c_str(), &dwHandle);
-    if (0 == dwSize)
-    {
-        qDebug()<<"Get GetFileVersionInfoSize error!";
-        return;
-    }
-    lpData = new char[dwSize];
-
-    bSuccess = GetFileVersionInfo(szFileName.toStdWString().c_str(), dwHandle, dwSize, lpData);
-    if (!bSuccess)
->>>>>>> aa4c39247867bf82a7889cdb76d4a34042b9d3b1
     {
         QProcess process(this);
         process.startDetached("Updater.exe");
-        if(upgradethread)
-        {
-            upgradethread->exit();
-            upgradethread->quit();
-        }
         this->close();
     }
-    else
-    {
-        return;
-    }
+
 }
 void MainWindow::httpDowloadFinished(bool flag)
 {
