@@ -32,3 +32,6 @@
 *.app
 
 *.pro.user*
+
+*.cpp.*
+

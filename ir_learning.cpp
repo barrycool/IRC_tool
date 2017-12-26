@@ -2,6 +2,7 @@
 #include "protocol.h"
 #include <QDebug>
 #include <QMessageBox>
+#include <QBitArray>
 
 IR_learning::IR_learning()
 {
@@ -46,6 +47,14 @@ void pop_sort(uint8_t cnt, uint8_t *times, uint8_t *bit_length)
       }
     }
   }
+}
+
+bool wave_form_pluse_compare(uint8_t pluse1, uint8_t pluse2)
+{
+    if (abs(pluse1 - pluse2) < LEARNING_PRECISION)
+        return true;
+
+    return false;
 }
 
 uint8_t IR_TX_WF_buf[128];
@@ -144,6 +153,97 @@ uint8_t IR_decode_learning(struct IR_learning_t *IR_learning)
       {
         return 0;
       }
+    }
+
+  QString s;
+  for (i = 0; i < IR_TX_WF_buf_len; i++)
+  {
+    s += QString::asprintf("%02d ", IR_TX_WF_buf[i]);
+  }
+
+  qDebug() << s << endl;
+
+  return 1;
+}
+
+uint8_t IR_decode_learning_160(struct IR_learning_160_t *IR_learning)
+{
+    uint8_t i, j;
+    uint8_t diff_cnt = 0;
+    uint8_t coding_length[IR_LEARNING_PLUSE_CNT];
+    uint64_t coding_value[IR_LEARNING_PLUSE_CNT];
+    uint8_t coding_mask[IR_LEARNING_PLUSE_CNT];
+    uint64_t tmp;
+    uint8_t bit_sum = 0;
+    uint8_t ext_index = 0;
+
+    for(i = 0; i< IR_LEARNING_PLUSE_CNT; i++)
+    {
+        if (IR_learning->pluse_width[i] == 0xFF)
+        {
+          break;
+        }
+
+        diff_cnt++;
+    }
+
+    if (diff_cnt == 2)
+    {
+      coding_value[0] = 0;
+      coding_length[0] = 1;
+      coding_mask[0] = 1;
+
+      coding_value[1] = 1;
+      coding_length[1] = 1;
+      coding_mask[1] = 1;
+    }
+    else if (diff_cnt == 3)
+    {
+      coding_value[0] = 0;
+      coding_length[0] = 1;
+      coding_mask[0] = 1;
+
+      coding_value[1] = 1;
+      coding_length[1] = 2;
+      coding_mask[1] = 3;
+
+      coding_value[2] = 3;
+      coding_length[2] = 2;
+      coding_mask[2] = 3;
+    }
+    else
+    {
+      return 0;
+    }
+
+    IR_TX_WF_buf_len = 0;
+    IR_TX_WF_buf[IR_TX_WF_buf_len++] = IR_learning->header_high;
+    IR_TX_WF_buf[IR_TX_WF_buf_len++] = IR_learning->header_low;
+
+    for(i = 0; i< IR_learning->bit_number; i++)
+    {
+        if (bit_sum >= (ext_index + 1) * 32)
+        {
+            tmp = IR_learning->bit_data_ext_32[ext_index];
+            IR_learning->bit_data |= tmp << (64 + ext_index * 32 - bit_sum);
+            ext_index++;
+        }
+
+        for(j = 0; j< diff_cnt; j++)
+        {
+            if ((IR_learning->bit_data & coding_mask[j]) == coding_value[j])
+            {
+                IR_TX_WF_buf[IR_TX_WF_buf_len++] = IR_learning->pluse_width[j];
+                IR_learning->bit_data >>= coding_length[j];
+                bit_sum += coding_length[j];
+                break;
+            }
+        }
+
+        if (j == diff_cnt)
+        {
+            return 0;
+        }
     }
 
   QString s;
@@ -273,6 +373,150 @@ uint8_t IR_encode_learning(uint8_t waveform[], uint8_t wave_form_cnt, IR_learnin
     }
 
     //IR_decode_learning(&IR_learn);
+
+    return 1;
+}
+
+using namespace std;
+
+uint8_t IR_encode_learning_160(uint8_t waveform[], uint8_t wave_form_cnt, IR_learning_160_t &IR_learn)
+{
+    QString s;
+    QVector<uint8_t> waveformBitPluse;
+
+    for (uint8_t i = 0; i < wave_form_cnt; i++)
+    {
+      s += QString::asprintf("%02d ", waveform[i]);
+      waveformBitPluse.push_back(waveform[i]);
+    }
+
+    qDebug() << s;
+
+    //delete header
+    waveformBitPluse.pop_front();
+    waveformBitPluse.pop_front();
+
+    sort(waveformBitPluse.begin(), waveformBitPluse.end());
+
+    QVector<uint8_t>::Iterator e = unique(waveformBitPluse.begin(), waveformBitPluse.end(),
+                                          [](uint8_t a, uint8_t b)->bool{return abs(a - b) < LEARNING_PRECISION;});
+    waveformBitPluse.erase(e, waveformBitPluse.end());
+
+    QList<QBitArray>pluseCodings;
+    if (waveformBitPluse.size() == 2)
+    {
+        QBitArray tmp(1, false);
+
+        tmp.clearBit(0);
+        pluseCodings.push_back(tmp); //bit 0
+
+        tmp.setBit(0);
+        pluseCodings.push_back(tmp); //bit 1
+    }
+    else if (waveformBitPluse.size() == 3)
+    {
+        QBitArray tmp(1, false);
+
+        tmp.clearBit(0);
+        pluseCodings.push_back(tmp); //bit 0
+
+        tmp.resize(2);
+        tmp.clearBit(0);
+        tmp.setBit(0);
+        pluseCodings.push_back(tmp); //bit 10
+
+        tmp.resize(2);
+        tmp.setBit(0);
+        tmp.setBit(0);
+        pluseCodings.push_back(tmp); //bit 11
+    }
+    else
+    {
+        qDebug() << "waveform pluse size:" << waveformBitPluse.size();
+        return 0;
+    }
+
+    memset(IR_learn.pluse_width, 0xFF, IR_LEARNING_PLUSE_CNT);
+
+    for (int i = 0; i < waveformBitPluse.size(); i++)
+    {
+        uint32_t pluseSum =  accumulate(waveform + 2, waveform + wave_form_cnt, 0,
+                                    [waveformBitPluse, i](uint32_t a, uint32_t b)->uint32_t
+                                    {
+                                        if (wave_form_pluse_compare(waveformBitPluse[i], b))
+                                            return a + b;
+                                        else
+                                            return a;
+                                    });
+
+        uint8_t pluseCnt = count_if(waveform + 2, waveform + wave_form_cnt,
+                                    [waveformBitPluse, i](uint8_t b)->bool
+                                    {
+                                        if (wave_form_pluse_compare(waveformBitPluse[i], b))
+                                            return true;
+                                        else
+                                            return false;
+                                    });
+
+        IR_learn.pluse_width[i] = (((double)pluseSum / pluseCnt) + 0.5);
+        waveformBitPluse[i] = IR_learn.pluse_width[i];
+    }
+
+    IR_learn.header_high = waveform[0];
+    IR_learn.header_low = waveform[1];
+
+    QBitArray waveformData(160, false);
+    IR_learn.bit_number = 0;
+
+    for (uint8_t i = 2; i < wave_form_cnt; i++)
+    {
+        for (uint8_t j = 0; j < waveformBitPluse.size(); j++)
+        {
+            if (wave_form_pluse_compare(waveform[i], waveformBitPluse[j]))
+            {
+                for (int x = 0; x < pluseCodings[j].size(); x++)
+                {
+                    waveformData.setBit(IR_learn.bit_number++,  pluseCodings[j][x]);
+                }
+            }
+        }
+    }
+
+    uint64_t tmpValue = 1;
+
+    for (uint8_t i = 0; i < IR_learn.bit_number; i++)
+    {
+        if (waveformData[i])
+        {
+            if (i < 64)
+            {
+                IR_learn.bit_data |= tmpValue << i;
+            }
+            else if (i < 96)
+            {
+                IR_learn.bit_data_ext_32[0] |= tmpValue << (i - 64);
+            }
+            else if (i < 128)
+            {
+                IR_learn.bit_data_ext_32[1] |= tmpValue << (i - 96);
+            }
+            else if (i < 160)
+            {
+                IR_learn.bit_data_ext_32[2] |= tmpValue << (i - 128);
+            }
+        }
+    }
+
+    IR_decode_learning_160(&IR_learn);
+    for (uint8_t i = 0; i < wave_form_cnt; i++)
+    {
+        if (!wave_form_pluse_compare(waveform[i], IR_TX_WF_buf[i]))
+        {
+            //QMessageBox::critical(NULL, "learing 160", QString::asprintf("%d: %d--%d", i, waveform[i], IR_TX_WF_buf[i]));
+            qDebug() << i << " :" <<  waveform[i] << "--" << IR_TX_WF_buf[i];
+            //return 0;
+        }
+    }
 
     return 1;
 }
@@ -611,25 +855,17 @@ uint8_t IR_encode_RC6(uint8_t waveform[255], uint8_t wave_form_cnt, IR_RC6_t &IR
 IR_item_t IR_learning_item;
 uint8_t IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
 {
-    //qDebug() << "IR_encode,wave_form_cnt= " << wave_form_cnt;
+    memset(&IR_learning_item, 0, sizeof(IR_item_t));
     IR_learning_item.is_valid = 1;
 
-    if(abs(waveform[0] -  SIRCS_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  SIRCS_START_BIT_LOW) < LEARNING_PRECISION &&
+    /*if(abs(waveform[0] -  SIRCS_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  SIRCS_START_BIT_LOW) < LEARNING_PRECISION &&
           (wave_form_cnt == 25 || wave_form_cnt == 31 || wave_form_cnt == 41))
     {
         //qDebug() << "IR_TYPE_SIRCS";
         IR_learning_item.IR_type = IR_TYPE_SIRCS;
         if (IR_encode_SIRCS(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_SIRCS))
             return 1;
-    }
-    if (/*abs(waveform[0] -  NEC_START_BIT_HIGH) < LEARNING_PRECISION &&*/ abs(waveform[1] -  NEC_START_BIT_LOW) < LEARNING_PRECISION &&
-             wave_form_cnt == 67)
-    {
-       // qDebug() << "IR_TYPE_NEC";
-        IR_learning_item.IR_type = IR_TYPE_NEC;
-        if (IR_encode_NEC(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_NEC))
-            return 1;
-    }
+    }*/
     if (abs(waveform[0] -  RC6_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  RC6_START_BIT_LOW) < LEARNING_PRECISION)
     {
         //qDebug() << "IR_TYPE_RC6";
@@ -646,6 +882,15 @@ uint8_t IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
             return 1;
 
     }
+    if (/*abs(waveform[0] -  NEC_START_BIT_HIGH) < LEARNING_PRECISION &&*/ abs(waveform[1] -  NEC_START_BIT_LOW) < LEARNING_PRECISION &&
+             wave_form_cnt == 67)
+    {
+       // qDebug() << "IR_TYPE_NEC";
+        IR_learning_item.IR_type = IR_TYPE_NEC;
+        if (IR_encode_NEC(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_NEC))
+            return 1;
+    }
+
     /*if (abs(waveform[0] -  JVC_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  JVC_START_BIT_LOW) < LEARNING_PRECISION &&
              wave_form_cnt == 35)
     {
@@ -655,9 +900,21 @@ uint8_t IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
             return 1;
     }*/
 
-    IR_learning_item.IR_type = IR_TYPE_LEARNING;
-    if (IR_encode_learning(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_learning))
-        return 1;
+    for(uint8_t i = 2; i< wave_form_cnt - 1; i++)
+    {
+        if (wave_form_pluse_compare(waveform[i], waveform[0]) && wave_form_pluse_compare(waveform[i + 1], waveform[1]))
+        {
+            if (abs(i * 2 - wave_form_cnt) < 10 || abs(i * 3 - wave_form_cnt) < 10)
+            {
+                wave_form_cnt = i - 1;
+            }
+        }
+    }
+
+    /*IR_learning_item.IR_type = IR_TYPE_LEARNING_160;
+    IR_learning_item.IR_CMD.IR_learning_160.repeate_cnt = 3;
+    if (IR_encode_learning_160(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_learning_160))
+        return 1;*/
 
     //QMessageBox::critical(NULL, "unspoorted IR protocol", "unspoorted IR protocol");
 
