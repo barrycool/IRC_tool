@@ -56,7 +56,7 @@ MainWindow::MainWindow(QWidget *parent) :
     upgradethread = new UpgradeThread();
     connect(upgradethread,SIGNAL(finish(bool)),this,SLOT(httpDowloadFinished(bool)));
     connect(upgradethread,SIGNAL(getVersionSignal()),this,SLOT(getCurrentMcuVersion()));
-    connect(upgradethread,SIGNAL(downloadIniFinish()),this,SLOT(checkToolVersion()));
+    connect(upgradethread,SIGNAL(maintoolNeedUpdate(QString)),this,SLOT(maintoolNeedUpdate_slot(QString)));
 
     upgradethread->start();
 
@@ -147,7 +147,11 @@ MainWindow::MainWindow(QWidget *parent) :
     sendcmd_timer.setSingleShot(true);
     //cmdSemaphore = new QSemaphore(1);
 
-    totalSendCnt = ui->atSndCntTotaltext->text().toInt();
+    totalSendCnt = settings->value("LoopCount",0).toInt();
+    if(totalSendCnt ==0)
+        totalSendCnt = 9999;
+    ui->atSndCntTotaltext->setText(QString::number(totalSendCnt));
+
     currentSendCnt = 0;
     loopcnt = 0;
 
@@ -451,146 +455,26 @@ void MainWindow::on_itemClicked(QListWidgetItem * item)
 extern bool isUpgradefileDownloaded;
 extern bool check_valid_upgrade_bin_version(QString fileName,uint32_t &version, uint32_t &checkSum);
 static bool inihasChecked = 0;
-
-void MainWindow::checkToolVersion()
+void MainWindow::maintoolNeedUpdate_slot(QString version)
 {
-    //output_log("latest tool download finished!",1);
-    if(inihasChecked == 1)
+    QString logstr ="New version: " + version +" is available,Do you want to Upgrade?";
+    QMessageBox::StandardButton reply = QMessageBox::question(this, "New Version Available ", logstr, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+    if(reply == QMessageBox::Yes)
     {
-        return;
-    }
-    qDebug() <<"checkToolVersion";
-/* CRC信息和版本信息存储在另外的ini配置文件中，只需下载ini配置文件，判断有新版本后再下载tool*/
-    uint32_t xnewVersion;
-    uint32_t dnewVersion;
-    uint32_t checksum;
-    QString appPath = qApp->applicationDirPath();
-    QString szFileName = appPath.remove("/debug").remove("/release").append("/manifest.ini");
-    QFile file(szFileName);
-    if(!file.exists())
-    {
-        qDebug()<< szFileName  << "  not exsit!";
-        return;
-    }
-
-    //step1: 读ini文件里的version 信息
-    QSettings *configIniRead = new QSettings(szFileName, QSettings::IniFormat);
-    //将读取到的ini文件保存在QString中，先取值，然后通过toString()函数转换成QString类型
-    QString version = configIniRead->value("/upgrade/version").toString();
-    QString filename = configIniRead->value("filename").toString();
-
-    //打印得到的结果
-    qDebug() << filename << " : " << version;
-    int newVersion = version.toInt();
-
-    inihasChecked = 1;
-
-    //step2:判断版本是否比本地更新
-    if(filename == SIR_TOOL_NAME && newVersion> VERSION)
-    {
-        //step3: 若较新，询问客户是都要升级，若是则下载相应的tool
-        version.replace("0","");
-        version.insert(1,".");
-        QString logstr ="New version: " + version +" is available,Do you want to Download and Upgrade?";
-        QMessageBox::StandardButton reply = QMessageBox::question(this, "New Version Available ", logstr, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
-        if(reply == QMessageBox::Yes)
+        QProcess process(this);
+        process.startDetached("Updater.exe");
+        if(upgradethread)
         {
-            on_actionDownload_MainTool_triggered();
+            upgradethread->exit();
+            upgradethread->quit();
         }
-        else
-        {
-            return;
-        }
-
-        appPath = qApp->applicationDirPath();
-        szFileName = appPath.append("/Download_files/").append(SIR_TOOL_NAME);
-
-        //step4：下载tool完成后，判断tool的checksum和Version，若OK，则升级
-        if(check_valid_upgrade_bin_version(szFileName,dnewVersion,checksum))
-        {
-            qDebug() << "dnewVersion : " << dnewVersion;
-            QString tmp = QString::number(dnewVersion,16); //10进制转成16进制
-            xnewVersion = tmp.toInt();
-            qDebug() << "xnewVersion : " << xnewVersion;
-            if(xnewVersion == newVersion)
-            {
-                QProcess process(this);
-                process.startDetached("Updater.exe");
-                this->close();
-            }
-            else
-            {
-                qDebug() << "version info is not matched!";
-            }
-        }
-        else
-        {
-            qDebug() << "Downloaded Smart_IR.exe is corrupted!";
-        }
-    }
-    upgradethread->exit();
-    upgradethread->quit();
-    return;
-/*通过QT在exe中嵌入版本信息，下载tool后读取tool的的版本，没有CRC校验
- *  DWORD dwSize = 0;
-    char* lpData = NULL;
-    BOOL bSuccess = FALSE;
-        // #pragma comment(lib,"Version.lib")
-    QString VerisonInfomation;
-    DWORD dwHandle;
-     qDebug() <<"checkToolVersion:" <<szFileName;
-    //获得文件基础信息
-    //--------------------------------------------------------
-    dwSize = GetFileVersionInfoSize(szFileName.toStdWString().c_str(), &dwHandle);
-    if (0 == dwSize)
-    {
-        qDebug()<<"Get GetFileVersionInfoSize error!";
-        return;
-    }
-    lpData = new char[dwSize];
-
-    bSuccess = GetFileVersionInfo(szFileName.toStdWString().c_str(), dwHandle, dwSize, lpData);
-    if (!bSuccess)
-    {
-        qDebug()<<"Get GetFileVersionInfo error!";
-        delete []lpData;
-        return;
-    }
-
-    //获得语言和代码页(language and code page)  //default as 080404b0
-    //VerQueryValue(pBlock,TEXT("\\VarFileInfo\\Translation"),&lpBuffer,&uLen;
-
-    //获得文件版本信息
-    //-----------------------------------------------------
-    LPVOID lpBuffer = NULL;
-    UINT uLen = 0;
-    bSuccess = VerQueryValue(lpData,TEXT("\\StringFileInfo\\080404b0\\FileVersion"),&lpBuffer,&uLen);
-    if (!bSuccess)
-    {
-        qDebug()<<"Get FileVersion error!";
-        delete []lpData;
-        return;
-    }
-    VerisonInfomation = QString::fromUtf16((const unsigned short int *)lpBuffer);
-    qDebug()<<"FileVersion:" << VerisonInfomation;
-    if(VerisonInfomation.toInt() > VERSION)
-    {
-        QString logstr = "Newer Version of SmartIR tool is available,Do you want to upgrade?";
-        QMessageBox::StandardButton reply = QMessageBox::question(this, "New Version Available ", logstr, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
-        if(reply == QMessageBox::Yes)
-        {
-            QProcess process(this);
-            process.startDetached("Updater.exe");
-            this->close();
-        }
+        this->close();
     }
     else
     {
-        output_log("no need to upgrade smartir tool",0);
+        return;
     }
-*/
 }
-
 void MainWindow::httpDowloadFinished(bool flag)
 {
     (void)flag;
@@ -627,10 +511,10 @@ void MainWindow::httpDowloadFinished(bool flag)
                 }
 
                 //if no need upgrade mcu,then check is tool is need to upgrade
-                if(!inihasChecked)
-                {
-                    upgradethread->download_manifestini();
-                }
+                //if(!inihasChecked)
+                //{
+                    //upgradethread->download_manifestini();
+                //}
             }
             else
             {
@@ -644,10 +528,10 @@ void MainWindow::httpDowloadFinished(bool flag)
                 else
                 {
                     //if no need upgrade mcu,then check is tool is need to upgrade
-                    if(!inihasChecked)
-                    {
-                        upgradethread->download_manifestini();
-                    }
+                    //if(!inihasChecked)
+                    //{
+                        //upgradethread->download_manifestini();
+                    //}
                 }
                 qDebug() << logstr;
                 output_log(logstr,1);
@@ -657,20 +541,20 @@ void MainWindow::httpDowloadFinished(bool flag)
         {
             output_log("checksum is error ",1);
             //if no need upgrade mcu,then check is tool is need to upgrade
-            if(!inihasChecked)
-            {
-                upgradethread->download_manifestini();
-            }
+            //if(!inihasChecked)
+            //{
+                //upgradethread->download_manifestini();
+            //}
         }
     }
     else
     {
         output_log("cannot find bin ",1);
         //if no need upgrade mcu,then check is tool is need to upgrade
-        if(!inihasChecked)
-        {
-            upgradethread->download_manifestini();
-        }
+        //if(!inihasChecked)
+        //{
+            //upgradethread->download_manifestini();
+        //}
     }
 
 }
@@ -926,6 +810,7 @@ void MainWindow::serial_receive_data()
         {
             ui->atStartButton->setText("Stop");
             totalSendCnt = ui->atSndCntTotaltext->text().toInt();
+            settings->setValue("LoopCount",totalSendCnt);
             currentSendCnt = 0;//ui->atSndCntCurText->text().toInt();
             loopcnt = 0;
             ui->atSndCntCurText->setText(QString::number(loopcnt));
@@ -1386,10 +1271,10 @@ void MainWindow::upgradedialog_reject()
         delete fupdiaglog;
         fupdiaglog = NULL;
     }
-    if(!inihasChecked)
-    {
-        upgradethread->download_manifestini();
-    }
+    //if(!inihasChecked)
+    //{
+        //upgradethread->download_manifestini();
+    //}
 }
 void MainWindow::returnfromUpgrade(bool needCloseSerial,uint32_t availableVersion)
 {
@@ -2624,6 +2509,11 @@ void MainWindow::atStartButton_slot()
     if(ui->atStartButton->text() == "Start")
     {
         qDebug() << "send START_SEND";
+        if(ui->atSndCntTotaltext->text().toInt() == 0)
+        {
+            output_log("Set loopCount First Please!!",1);
+            ui->atSndCntTotaltext->setFocus();
+        }
         output_log("start the loop test.",1);
         frame->msg = START_SEND;//CLEAR_CMD_LIST;
         ui->atStartButton->setText("Pause");
@@ -3267,7 +3157,7 @@ void MainWindow::on_actionDownload_MainTool_triggered()
         {
             logstr = "fileDir created success.";
             qDebug() << logstr;
-            output_log(logstr,0);
+            output_log(logstr,1);
         }
         else
         {

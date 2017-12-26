@@ -17,11 +17,14 @@ public:
 
     void serialSetReady(bool isReady);
     void download_manifestini();
+    void download_mcuBin();
+    void download_mainTool();
+    void checkToolVersion();
 
 signals:
     void finish(bool);
     void getVersionSignal();
-    void downloadIniFinish();
+    void maintoolNeedUpdate(QString);
 
 private:
     bool isSerialReady;

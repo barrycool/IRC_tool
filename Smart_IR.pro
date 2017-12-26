@@ -11,7 +11,6 @@ QT       += network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-
 TARGET = Smart_IR
 TEMPLATE = app
 
@@ -64,6 +63,6 @@ RESOURCES += \
 
 LIBS += -lVersion
 
-RC_ICONS = smartIRLogo.ico
-
-#RC_FILE += versionInfo.rc
+#RC_FILE += uac.rc
+RC_ICONS += smartIRLogo.ico
+#QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'requireAdministrator\'uiAccess=\'false\'\"

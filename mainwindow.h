@@ -170,7 +170,8 @@ private slots:
     void on_actionTCP_mode_triggered(bool checked);
 
     void on_actionUSB_mode_triggered(bool checked);
-    void checkToolVersion();
+    //void checkToolVersion();
+    void maintoolNeedUpdate_slot(QString);
 
     void on_atReturnToList_clicked();
 
