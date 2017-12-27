@@ -147,7 +147,7 @@ void UpgradeThread::checkToolVersion()
     QString filename = configIniRead->value("filename").toString();
 
     //打印得到的结果
-    int newVersion = version.toInt();
+    uint32_t newVersion = version.toUInt();
     qDebug() << filename << " : " << version << " : " << newVersion;
     inihasChecked = 1;
 

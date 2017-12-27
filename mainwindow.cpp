@@ -465,7 +465,7 @@ void MainWindow::on_itemClicked(QListWidgetItem * item)
 #define SIR_TOOL_NAME  "Smart_IR.exe"
 extern bool isUpgradefileDownloaded;
 extern bool check_valid_upgrade_bin_version(QString fileName,uint32_t &version, uint32_t &checkSum);
-static bool inihasChecked = 0;
+//static bool inihasChecked = 0;
 void MainWindow::maintoolNeedUpdate_slot(QString version)
 {
 
