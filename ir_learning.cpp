@@ -9,7 +9,7 @@ IR_learning::IR_learning()
 
 }
 
-#define LEARNING_PRECISION 3
+#define LEARNING_PRECISION 4
 
 #define SIRCS_START_BIT_HIGH 24
 #define SIRCS_START_BIT_LOW 6
@@ -59,112 +59,6 @@ bool wave_form_pluse_compare(uint8_t pluse1, uint8_t pluse2)
 
 uint8_t IR_TX_WF_buf[128];
 uint8_t IR_TX_WF_buf_len;
-
-uint8_t IR_decode_learning(struct IR_learning_t *IR_learning)
-{
-    uint8_t i, j;
-    uint8_t diff_cnt = 0;
-    uint8_t coding_length[IR_LEARNING_PLUSE_CNT];
-    uint64_t coding_value[IR_LEARNING_PLUSE_CNT];
-    uint8_t coding_mask[IR_LEARNING_PLUSE_CNT];
-    uint64_t tmp;
-    uint8_t bit_sum = 0;
-
-  for(i = 0; i< IR_LEARNING_PLUSE_CNT; i++)
-  {
-    if (IR_learning->pluse_width[i] == 0xFF)
-    {
-      break;
-    }
-
-    diff_cnt++;
-  }
-
-  if (diff_cnt == 2)
-  {
-      coding_value[0] = 0;
-      coding_length[0] = 1;
-      coding_mask[0] = 1;
-
-      coding_value[1] = 1;
-      coding_length[1] = 1;
-      coding_mask[1] = 1;
-  }
-  else if (diff_cnt == 3)
-  {
-      coding_value[0] = 0;
-      coding_length[0] = 1;
-      coding_mask[0] = 1;
-
-      coding_value[1] = 1;
-      coding_length[1] = 2;
-      coding_mask[1] = 3;
-
-      coding_value[2] = 3;
-      coding_length[2] = 2;
-      coding_mask[2] = 3;
-  }
-  else
-  {
-      return 0;
-  }
-
-
-  IR_TX_WF_buf_len = 0;
-  IR_TX_WF_buf[IR_TX_WF_buf_len++] = IR_learning->header_high;
-  IR_TX_WF_buf[IR_TX_WF_buf_len++] = IR_learning->header_low;
-
-    for(i = 0; i< IR_learning->bit_number && bit_sum < 16; i++)
-    {
-      for(j = 0; j< diff_cnt; j++)
-      {
-          if ((IR_learning->bit_data & coding_mask[j]) == coding_value[j])
-          {
-              IR_TX_WF_buf[IR_TX_WF_buf_len++] = IR_learning->pluse_width[j];
-              IR_learning->bit_data >>= coding_length[j];
-              bit_sum += coding_length[j];
-              break;
-          }
-      }
-
-      if (j == diff_cnt)
-      {
-        return 0;
-      }
-    }
-
-    tmp = IR_learning->bit_data_ext_16;
-    IR_learning->bit_data |= tmp << (64 - bit_sum);
-
-    for(;i< IR_learning->bit_number; i++)
-    {
-      for(j = 0; j< diff_cnt; j++)
-      {
-          if ((IR_learning->bit_data & coding_mask[j]) == coding_value[j])
-          {
-              IR_TX_WF_buf[IR_TX_WF_buf_len++] = IR_learning->pluse_width[j];
-              IR_learning->bit_data >>= coding_length[j];
-              bit_sum += coding_length[j];
-              break;
-          }
-      }
-
-      if (j == diff_cnt)
-      {
-        return 0;
-      }
-    }
-
-  QString s;
-  for (i = 0; i < IR_TX_WF_buf_len; i++)
-  {
-    s += QString::asprintf("%02d ", IR_TX_WF_buf[i]);
-  }
-
-  qDebug() << s << endl;
-
-  return 1;
-}
 
 uint8_t IR_decode_learning_160(struct IR_learning_160_t *IR_learning)
 {
@@ -252,129 +146,9 @@ uint8_t IR_decode_learning_160(struct IR_learning_160_t *IR_learning)
     s += QString::asprintf("%02d ", IR_TX_WF_buf[i]);
   }
 
-  qDebug() << s << endl;
+  qDebug() << "decode:" << s << endl;
 
   return 1;
-}
-
-uint8_t IR_encode_learning(uint8_t waveform[], uint8_t wave_form_cnt, IR_learning_t &IR_learn)
-{
-    uint8_t i, j;
-    uint8_t diff_cnt;
-    uint8_t repeate_times[IR_LEARNING_PLUSE_CNT];
-
-    QString s;
-
-    for (i = 0; i < wave_form_cnt; i++)
-    {
-      s += QString::asprintf("%02d ", waveform[i]);
-    }
-
-    qDebug() << s << endl;
-
-    for (i = 0; i < IR_LEARNING_PLUSE_CNT; i++)
-    {
-      IR_learn.pluse_width[i] = 0xFF;
-    }
-
-    IR_learn.header_high = waveform[0];
-    IR_learn.header_low = waveform[1];
-
-    diff_cnt = 0;
-    for (i = 2; i < wave_form_cnt; i++)
-    {
-      for (j = 0; j < diff_cnt; j++)
-      {
-        if (abs(IR_learn.pluse_width[j] - waveform[i]) < LEARNING_PRECISION)
-        {
-            repeate_times[j]++;
-          break;
-        }
-      }
-
-      if (j == diff_cnt)
-      {
-        IR_learn.pluse_width[j] = waveform[i];
-        repeate_times[j] = 1;
-        diff_cnt++;
-        if (diff_cnt > size_t(IR_learn.pluse_width))
-        {
-          return 0;
-        }
-      }
-    }
-
-    pop_sort(diff_cnt, repeate_times, IR_learn.pluse_width);
-
-    uint8_t coding_length[IR_LEARNING_PLUSE_CNT];
-    uint64_t coding_value[IR_LEARNING_PLUSE_CNT];
-
-    if (diff_cnt == 2)
-    {
-        coding_value[0] = 0;
-        coding_length[0] = 1;
-
-        coding_value[1] = 1;
-        coding_length[1] = 1;
-    }
-    else if (diff_cnt == 3)
-    {
-        coding_value[0] = 0;
-        coding_length[0] = 1;
-
-        coding_value[1] = 1;
-        coding_length[1] = 2;
-
-        coding_value[2] = 3;
-        coding_length[2] = 2;
-    }
-    else
-    {
-        return 0;
-    }
-
-    IR_learn.bit_data = 0;
-    IR_learn.bit_data_ext_16 = 0;
-    IR_learn.bit_number = 0;
-
-    uint8_t bit_index = 0;
-
-    for (i = 2; i < wave_form_cnt; i++)
-    {
-        for (j = 0; j < diff_cnt; j++)
-        {
-            if (abs(IR_learn.pluse_width[j] - waveform[i]) < LEARNING_PRECISION)
-            {
-                if (bit_index < 64)
-                {
-                    IR_learn.bit_data |= (coding_value[j] << bit_index);
-
-                    if (bit_index +  coding_length[j] > 64)
-                    {
-                        IR_learn.bit_data_ext_16 |= coding_value[j] >> (64 - bit_index);
-                    }
-                }
-                else
-                {
-                    IR_learn.bit_data_ext_16 |= (coding_value[j] << (bit_index - 64));
-                }
-
-                bit_index += coding_length[j];
-
-                IR_learn.bit_number++;
-                break;
-            }
-        }
-
-        if (j == diff_cnt)
-        {
-            return 0;
-        }
-    }
-
-    //IR_decode_learning(&IR_learn);
-
-    return 1;
 }
 
 using namespace std;
@@ -390,7 +164,7 @@ uint8_t IR_encode_learning_160(uint8_t waveform[], uint8_t wave_form_cnt, IR_lea
       waveformBitPluse.push_back(waveform[i]);
     }
 
-    qDebug() << s;
+    qDebug() << "origin:" << s;
 
     //delete header
     waveformBitPluse.pop_front();
@@ -507,14 +281,15 @@ uint8_t IR_encode_learning_160(uint8_t waveform[], uint8_t wave_form_cnt, IR_lea
         }
     }
 
-    IR_decode_learning_160(&IR_learn);
+    IR_learning_160_t tmp = IR_learn;
+    IR_decode_learning_160(&tmp);
     for (uint8_t i = 0; i < wave_form_cnt; i++)
     {
         if (!wave_form_pluse_compare(waveform[i], IR_TX_WF_buf[i]))
         {
-            //QMessageBox::critical(NULL, "learing 160", QString::asprintf("%d: %d--%d", i, waveform[i], IR_TX_WF_buf[i]));
+            QMessageBox::critical(NULL, "learing 160", QString::asprintf("%d: %d--%d", i, waveform[i], IR_TX_WF_buf[i]));
             qDebug() << i << " :" <<  waveform[i] << "--" << IR_TX_WF_buf[i];
-            //return 0;
+            return 0;
         }
     }
 
@@ -858,14 +633,14 @@ uint8_t IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
     memset(&IR_learning_item, 0, sizeof(IR_item_t));
     IR_learning_item.is_valid = 1;
 
-    /*if(abs(waveform[0] -  SIRCS_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  SIRCS_START_BIT_LOW) < LEARNING_PRECISION &&
+    if(abs(waveform[0] -  SIRCS_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  SIRCS_START_BIT_LOW) < LEARNING_PRECISION &&
           (wave_form_cnt == 25 || wave_form_cnt == 31 || wave_form_cnt == 41))
     {
         //qDebug() << "IR_TYPE_SIRCS";
         IR_learning_item.IR_type = IR_TYPE_SIRCS;
         if (IR_encode_SIRCS(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_SIRCS))
             return 1;
-    }*/
+    }
     if (abs(waveform[0] -  RC6_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  RC6_START_BIT_LOW) < LEARNING_PRECISION)
     {
         //qDebug() << "IR_TYPE_RC6";
@@ -900,21 +675,33 @@ uint8_t IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
             return 1;
     }*/
 
-    for(uint8_t i = 2; i< wave_form_cnt - 1; i++)
+    IR_learning_item.IR_CMD.IR_learning_160.repeate_cnt = 1;
+    IR_learning_item.IR_CMD.IR_learning_160.repeate_interval = 100;
+
+    for(uint8_t i = 2; i < wave_form_cnt - 1; i++)
     {
         if (wave_form_pluse_compare(waveform[i], waveform[0]) && wave_form_pluse_compare(waveform[i + 1], waveform[1]))
         {
-            if (abs(i * 2 - wave_form_cnt) < 10 || abs(i * 3 - wave_form_cnt) < 10)
+            if (abs(i * 2 - wave_form_cnt) < 10)
             {
                 wave_form_cnt = i - 1;
+                IR_learning_item.IR_CMD.IR_learning_160.repeate_cnt = 2;
+                IR_learning_item.IR_CMD.IR_learning_160.repeate_interval = waveform[i - 1];
+                break;
+            }
+            else if (abs(i * 3 - wave_form_cnt) < 10)
+            {
+                wave_form_cnt = i - 1;
+                IR_learning_item.IR_CMD.IR_learning_160.repeate_cnt = 3;
+                IR_learning_item.IR_CMD.IR_learning_160.repeate_interval = waveform[i - 1];
+                break;
             }
         }
     }
 
-    /*IR_learning_item.IR_type = IR_TYPE_LEARNING_160;
-    IR_learning_item.IR_CMD.IR_learning_160.repeate_cnt = 3;
+    IR_learning_item.IR_type = IR_TYPE_LEARNING_160;
     if (IR_encode_learning_160(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_learning_160))
-        return 1;*/
+        return 1;
 
     //QMessageBox::critical(NULL, "unspoorted IR protocol", "unspoorted IR protocol");
 
@@ -978,26 +765,30 @@ QString IRLearningItem2String(int nLength)
             m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_JVC.IR_address)).append("-");
             m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_JVC.IR_command));
             break;*/
-        case IR_TYPE_LEARNING:
+        case IR_TYPE_LEARNING_160:
             //qDebug() << "IR_learning.bit_data=" << IR_learning_item.IR_CMD.IR_learning.bit_data;
             //qDebug("IR_learning.bit_data=0x%x",IR_learning_item.IR_CMD.IR_learning.bit_data);
             //qDebug() << "SIR_learning.bit_data=" << QString::number(IR_learning_item.IR_CMD.IR_learning.bit_data,16);
 
-            m_tmp.append(QString::number(IR_learning_item.IR_CMD.IR_learning.bit_data,16)).append("-");
-            m_tmp.append(QString::number(IR_learning_item.IR_CMD.IR_learning.bit_data_ext_16,16)).append("-");
-            m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_learning.bit_number)).append("-");
-            m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_learning.header_high)).append("-");
-            m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_learning.header_low)).append("-");
+            m_tmp.append(QString::number(IR_learning_item.IR_CMD.IR_learning_160.bit_data,16)).append("-");
+            m_tmp.append(QString::number(IR_learning_item.IR_CMD.IR_learning_160.bit_data_ext_32[0],16)).append("-");
+            m_tmp.append(QString::number(IR_learning_item.IR_CMD.IR_learning_160.bit_data_ext_32[1],16)).append("-");
+            m_tmp.append(QString::number(IR_learning_item.IR_CMD.IR_learning_160.bit_data_ext_32[2],16)).append("-");
+            m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_learning_160.bit_number)).append("-");
+            m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_learning_160.repeate_cnt)).append("-");
+            m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_learning_160.repeate_interval)).append("-");
+            m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_learning_160.header_high)).append("-");
+            m_tmp.append(hexByte2String(IR_learning_item.IR_CMD.IR_learning_160.header_low));
             for(int i =0;i<IR_LEARNING_PLUSE_CNT;i++)
             {
-                m_tmp.append("-").append(hexByte2String(IR_learning_item.IR_CMD.IR_learning.pluse_width[i]));
+                m_tmp.append("-").append(hexByte2String(IR_learning_item.IR_CMD.IR_learning_160.pluse_width[i]));
             }
             break;
         default:
             break;
     }
     m_result.append(m_tmp);
-    //qDebug() << "m_reslut: " <<m_result;
+    qDebug() << "m_reslut: " <<m_result;
     return m_result;
 }
 
@@ -1090,22 +881,19 @@ bool String2IRLearningItem(QString src,IR_item_t *learningItem)
                 qDebug() << "format error!";
             }
             break;*/
-        case IR_TYPE_LEARNING:
-            if(len == 10)
+        case IR_TYPE_LEARNING_160:
+            learningItem->IR_CMD.IR_learning_160.bit_data = list1.at(1).toULongLong(&ok,16);
+            learningItem->IR_CMD.IR_learning_160.bit_data_ext_32[0] = list1.at(2).toUInt(&ok,16);
+            learningItem->IR_CMD.IR_learning_160.bit_data_ext_32[1] = list1.at(3).toUInt(&ok,16);
+            learningItem->IR_CMD.IR_learning_160.bit_data_ext_32[2] = list1.at(4).toUInt(&ok,16);
+            learningItem->IR_CMD.IR_learning_160.bit_number = list1.at(5).toInt(&ok,16);
+            learningItem->IR_CMD.IR_learning_160.repeate_cnt = list1.at(6).toInt(&ok,16);
+            learningItem->IR_CMD.IR_learning_160.repeate_interval = list1.at(7).toInt(&ok,16);
+            learningItem->IR_CMD.IR_learning_160.header_high = list1.at(8).toInt(&ok,16);
+            learningItem->IR_CMD.IR_learning_160.header_low= list1.at(9).toInt(&ok,16);
+            for(int i =0;i<IR_LEARNING_PLUSE_CNT;i++)
             {
-                learningItem->IR_CMD.IR_learning.bit_data = list1.at(1).toULongLong(&ok,16);
-                learningItem->IR_CMD.IR_learning.bit_data_ext_16 = list1.at(2).toUInt(&ok,16);
-                learningItem->IR_CMD.IR_learning.bit_number = list1.at(3).toInt(&ok,16);
-                learningItem->IR_CMD.IR_learning.header_high = list1.at(4).toInt(&ok,16);
-                learningItem->IR_CMD.IR_learning.header_low= list1.at(5).toInt(&ok,16);
-                for(int i =0;i<IR_LEARNING_PLUSE_CNT;i++)
-                {
-                   learningItem->IR_CMD.IR_learning.pluse_width[i]= list1.at(6+i).toInt(&ok,16);
-                }
-            }
-            else
-            {
-                qDebug() << "format error!";
+               learningItem->IR_CMD.IR_learning_160.pluse_width[i]= list1.at(10+i).toInt(&ok,16);
             }
             break;
         default:

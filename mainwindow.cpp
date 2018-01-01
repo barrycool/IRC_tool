@@ -410,8 +410,8 @@ void MainWindow::update_IR_items_List()
                      /*case IR_TYPE_JVC:
                          memcpy(IR_item.IR_CMD.IR_JVC.name,tmpBuf,MAX_NAME_LEN);
                          break;*/
-                     case IR_TYPE_LEARNING:
-                         memcpy(IR_item.IR_CMD.IR_learning.name,tmpBuf,MAX_NAME_LEN);
+                     case IR_TYPE_LEARNING_160:
+                         memcpy(IR_item.IR_CMD.IR_learning_160.name,tmpBuf,MAX_NAME_LEN);
                          break;
                      default:
                          break;
@@ -868,8 +868,8 @@ void MainWindow::serial_receive_data()
             /*case IR_TYPE_JVC:
                 memcpy(tmpBuf,ir_item.IR_CMD.IR_JVC.name,MAX_NAME_LEN);
                 break;*/
-            case IR_TYPE_LEARNING:
-                memcpy(tmpBuf,ir_item.IR_CMD.IR_learning.name,MAX_NAME_LEN);
+            case IR_TYPE_LEARNING_160:
+                memcpy(tmpBuf,ir_item.IR_CMD.IR_learning_160.name,MAX_NAME_LEN);
                 break;
             default:
                 break;
@@ -1056,16 +1056,20 @@ void MainWindow::printIrItemInfo(IR_item_t ir_item)
             str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_JVC.IR_address,16));
             str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_JVC.IR_command,16));*/
                 break;
-        case IR_TYPE_LEARNING:
-            str.append(ir_item.IR_CMD.IR_learning.name);
-            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.bit_data,16));
-            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.bit_data_ext_16,16));
-            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.bit_number,16));
-            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.header_high,16));
-            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.header_low,16));
+        case IR_TYPE_LEARNING_160:
+            str.append(ir_item.IR_CMD.IR_learning_160.name);
+            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning_160.bit_data,16));
+            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning_160.bit_data_ext_32[0],16));
+            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning_160.bit_data_ext_32[1],16));
+            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning_160.bit_data_ext_32[2],16));
+            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning_160.bit_number,16));
+            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning_160.repeate_cnt,16));
+            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning_160.repeate_interval,16));
+            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning_160.header_high,16));
+            str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning_160.header_low,16));
 
             for(int i=0;i < IR_LEARNING_PLUSE_CNT;i++){
-                str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning.pluse_width[i],16));
+                str.append(":0x").append(QString::number(ir_item.IR_CMD.IR_learning_160.pluse_width[i],16));
             }
             break;
         default:
@@ -1896,8 +1900,8 @@ void MainWindow::atScriptlistWidgetClicked_slot(QListWidgetItem* item)
         /*case IR_TYPE_JVC:
             memcpy(tmpBuf,IR_items.at(currentRow-1).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
             break;*/
-        case IR_TYPE_LEARNING:
-            memcpy(tmpBuf,IR_items.at(currentRow-1).IR_CMD.IR_learning.name,MAX_NAME_LEN);
+        case IR_TYPE_LEARNING_160:
+            memcpy(tmpBuf,IR_items.at(currentRow-1).IR_CMD.IR_learning_160.name,MAX_NAME_LEN);
             break;
         default:
             break;
@@ -2064,8 +2068,8 @@ void MainWindow::add_to_list(QString button_name,uint32_t delay)
                 /*case IR_TYPE_JVC:
                     memcpy(IR_item.IR_CMD.IR_JVC.name,tmpBuf,MAX_NAME_LEN);
                     break;*/
-                case IR_TYPE_LEARNING:
-                    memcpy(IR_item.IR_CMD.IR_learning.name,tmpBuf,MAX_NAME_LEN);
+                case IR_TYPE_LEARNING_160:
+                    memcpy(IR_item.IR_CMD.IR_learning_160.name,tmpBuf,MAX_NAME_LEN);
                     break;
                 default:
                     break;
@@ -2115,8 +2119,8 @@ void MainWindow::add_to_list(QString button_name,uint32_t delay)
                    /*case IR_TYPE_JVC:
                        memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
                        break;*/
-                   case IR_TYPE_LEARNING:
-                       memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_learning.name,MAX_NAME_LEN);
+                   case IR_TYPE_LEARNING_160:
+                       memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_learning_160.name,MAX_NAME_LEN);
                        break;
                    default:
                        break;
@@ -2315,8 +2319,8 @@ void MainWindow::atSaveButton_slot()
                 /*case IR_TYPE_JVC:
                     memcpy(tmpBuf,IR_items.at(i).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
                     break;*/
-                case IR_TYPE_LEARNING:
-                    memcpy(tmpBuf,IR_items.at(i).IR_CMD.IR_learning.name,MAX_NAME_LEN);
+                case IR_TYPE_LEARNING_160:
+                    memcpy(tmpBuf,IR_items.at(i).IR_CMD.IR_learning_160.name,MAX_NAME_LEN);
                     break;
                 default:
                     break;
@@ -2395,8 +2399,8 @@ void MainWindow::atRealTimeSendButton_slot()
                 /*case IR_TYPE_JVC:
                     memcpy(ir_item.IR_CMD.IR_JVC.name,tmpBuf,MAX_NAME_LEN);
                     break;*/
-                case IR_TYPE_LEARNING:
-                    memcpy(ir_item.IR_CMD.IR_learning.name,tmpBuf,MAX_NAME_LEN);
+                case IR_TYPE_LEARNING_160:
+                    memcpy(ir_item.IR_CMD.IR_learning_160.name,tmpBuf,MAX_NAME_LEN);
                     break;
                 default:
                     break;
@@ -2615,8 +2619,8 @@ void MainWindow::leRealTimeTestButton_slot()
         /*case IR_TYPE_JVC:
             memcpy(ir_item.IR_CMD.IR_JVC.name,tmpBuf,MAX_NAME_LEN);
             break;*/
-        case IR_TYPE_LEARNING:
-            memcpy(ir_item.IR_CMD.IR_learning.name,tmpBuf,MAX_NAME_LEN);
+        case IR_TYPE_LEARNING_160:
+            memcpy(ir_item.IR_CMD.IR_learning_160.name,tmpBuf,MAX_NAME_LEN);
             break;
         default:
             break;
@@ -3031,8 +3035,8 @@ void MainWindow::on_atUpMove_clicked()
             /*case IR_TYPE_JVC:
                 memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
                 break;*/
-            case IR_TYPE_LEARNING:
-                memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_learning.name,MAX_NAME_LEN);
+            case IR_TYPE_LEARNING_160:
+                memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_learning_160.name,MAX_NAME_LEN);
                 break;
             default:
                 break;
@@ -3072,8 +3076,8 @@ void MainWindow::on_atDownMove_clicked()
                 /*case IR_TYPE_JVC:
                     memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_JVC.name,MAX_NAME_LEN);
                     break;*/
-                case IR_TYPE_LEARNING:
-                    memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_learning.name,MAX_NAME_LEN);
+                case IR_TYPE_LEARNING_160:
+                    memcpy(tmpNameBuf,IR_items.at(i).IR_CMD.IR_learning_160.name,MAX_NAME_LEN);
                     break;
                 default:
                     break;

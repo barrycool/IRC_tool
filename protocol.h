@@ -6,7 +6,7 @@
 
 #define FRAME_HEADER        0x55
 #define MAX_KEY_LEN         128
-#define MAX_NAME_LEN        16
+#define MAX_NAME_LEN        12
 #define UPGRADE_PACKET_SIZE 52
 #define BUF_LEN             512
 #define IR_MAX_LEVEL_NUMBER     10
@@ -27,7 +27,6 @@ enum IR_type_t {
   IR_TYPE_RC6,
   IR_TYPE_RC5,
   IR_TYPE_JVC,  //JVC is deleted by barry 20171008
-  IR_TYPE_LEARNING,
   IR_TYPE_LEARNING_160,
 
   IR_TYPE_MAX
@@ -76,34 +75,20 @@ struct IR_RC5_t {
 };*/
 
 #define IR_LEARNING_PLUSE_CNT 3
-struct IR_learning_t{
-  uint64_t bit_data;
-  uint16_t bit_data_ext_16;
-
-  uint8_t bit_number;
-
-  uint8_t header_high;
-  uint8_t header_low;
-
-  uint8_t pluse_width[IR_LEARNING_PLUSE_CNT];
-
-  char name[16];
-};
-
 struct IR_learning_160_t{
   uint64_t bit_data;
   uint32_t bit_data_ext_32[3];
 
   uint8_t bit_number;
 
+  uint8_t repeate_cnt;
+  uint8_t repeate_interval;
+
   uint8_t header_high;
   uint8_t header_low;
-
   uint8_t pluse_width[IR_LEARNING_PLUSE_CNT];
 
-  uint8_t repeate_cnt;
-
-  char name[13];
+  char name[12];
 };
 
 union IR_CMD_t{
@@ -112,8 +97,7 @@ union IR_CMD_t{
   struct IR_RC6_t IR_RC6;
   struct IR_RC5_t IR_RC5;
   //struct IR_JVC_t IR_JVC;
-  struct IR_learning_t IR_learning;
-  //struct IR_learning_160_t IR_learning_160;
+  struct IR_learning_160_t IR_learning_160;
 };
 
 struct IR_item_t {
