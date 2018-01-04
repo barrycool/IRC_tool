@@ -20,6 +20,9 @@ static bool isInit = 0;
 QStringList IR_protocols;// = {"sony"};
 QStringList IR_SIRCS_devices[IR_devices_MAX] = {{"BDP0", "soundbar0"}};
 
+extern QList <IR_item_t> IR_items;
+extern QList <IR_map_t> IR_maps;
+
 QString logstr = NULL;
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -28,9 +31,9 @@ MainWindow::MainWindow(QWidget *parent) :
 {
 
     ui->setupUi(this);
-
     output_log("start...",1);
-    output_log("setup ui...",1);
+    //qDebug() << "start with UI mode!";
+    //ui->setupUi(this);
     ui->AgingTestSubWindow->showMaximized();
     ui->actionIRWave->setDisabled(true);
 
@@ -53,15 +56,7 @@ MainWindow::MainWindow(QWidget *parent) :
     currentMcuVersion = 0;
     availableMcuVersion = 0;
 
-    upgradethread = new UpgradeThread();
-    connect(upgradethread,SIGNAL(finish(bool)),this,SLOT(httpDowloadFinished(bool)));
-    connect(upgradethread,SIGNAL(getVersionSignal()),this,SLOT(getCurrentMcuVersion()));
-    connect(upgradethread,SIGNAL(maintoolNeedUpdate(QString)),this,SLOT(maintoolNeedUpdate_slot(QString)));
-
-    upgradethread->start();
-
     settings = new QSettings("Mediatek","Smart_IR");
-
     ui->actionTCP_mode->setChecked(settings->value("use_tcp", 0).toBool());
     ui->actionUSB_mode->setChecked(!settings->value("use_tcp", 0).toBool());
 
@@ -73,10 +68,16 @@ MainWindow::MainWindow(QWidget *parent) :
         SerialPortListQAction->setVisible(false);
     }
 
+    upgradethread = new UpgradeThread();
+    connect(upgradethread,SIGNAL(finish(bool)),this,SLOT(httpDowloadFinished(bool)));
+    connect(upgradethread,SIGNAL(getVersionSignal()),this,SLOT(getCurrentMcuVersion()));
+    connect(upgradethread,SIGNAL(maintoolNeedUpdate(QString)),this,SLOT(maintoolNeedUpdate_slot(QString)));
+    upgradethread->start();
+
     settings->setValue("Tool_Version",VERSION);
     output_log("setting serial port...",1);
     ui->actionPort_Setting->setDisabled(true);//disable uart setting for now
-    on_actionOpenUart_triggered();
+
     QString baudrate = DEFAULT_BAUDRATE;
     portSetting.baudRate = baudrate.toInt();
     portSetting.checkBit = DEFAULT_CHECKBIT;
@@ -85,12 +86,24 @@ MainWindow::MainWindow(QWidget *parent) :
 
     this->lw = NULL;
 
+    on_actionOpenUart_triggered();
+
+    totalSendCnt = settings->value("LoopCount",0).toInt();
+    if(totalSendCnt ==0)
+        totalSendCnt = 9999;
+
+    currentSendCnt = 0;
+    loopcnt = 0;
+    connect(&serial, SIGNAL(readyRead()), this, SLOT(serial_receive_data()));
+    connect(&socket, QTcpSocket::readyRead, this, serial_receive_data);
+    connect(&socket, QTcpSocket::stateChanged, this, on_tcp_connect_state);
+
     QString appPath = qApp->applicationDirPath();
     keyMapDirPath = appPath.append("\\KeyMapConfig");
 
     logstr = "get keyMap Dir Path :";
     logstr.append(keyMapDirPath);
-    qDebug() << logstr;
+    //qDebug() << logstr;
     output_log(logstr,0);
 
     //for Aging Test SubWindow
@@ -143,17 +156,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ir_button_Slot_connect();
 
     connect(&sendcmd_timer, &QTimer::timeout, this, &sendcmdTimeout);
-    connect(&serial, SIGNAL(readyRead()), this, SLOT(serial_receive_data()));
+
     sendcmd_timer.setSingleShot(true);
     //cmdSemaphore = new QSemaphore(1);
-
-    totalSendCnt = settings->value("LoopCount",0).toInt();
-    if(totalSendCnt ==0)
-        totalSendCnt = 9999;
-    ui->atSndCntTotaltext->setText(QString::number(totalSendCnt));
-
-    currentSendCnt = 0;
-    loopcnt = 0;
 
     connect(ui->PB_reboot_wifi, QPushButton::clicked, this, on_wifi_setting);
     connect(ui->PB_restore_wifi, QPushButton::clicked, this, on_wifi_setting);
@@ -163,10 +168,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->PB_set_router_passwd, QPushButton::clicked, this, on_wifi_setting);
     connect(ui->PB_read_router_passwd, QPushButton::clicked, this, on_wifi_setting);
 
-    connect(&socket, QTcpSocket::readyRead, this, serial_receive_data);
-    connect(&socket, QTcpSocket::stateChanged, this, on_tcp_connect_state);
-
     fupdiaglog = NULL;
+
     isInit = 1;
 }
 
@@ -465,7 +468,7 @@ void MainWindow::on_itemClicked(QListWidgetItem * item)
 #define SIR_TOOL_NAME  "Smart_IR.exe"
 extern bool isUpgradefileDownloaded;
 extern bool check_valid_upgrade_bin_version(QString fileName,uint32_t &version, uint32_t &checkSum);
-static bool inihasChecked = 0;
+//static bool inihasChecked = 0;
 void MainWindow::maintoolNeedUpdate_slot(QString version)
 {
 
@@ -1795,41 +1798,6 @@ void MainWindow::setToKeyListWidget(QString line)
     QListWidgetItem *item = new QListWidgetItem(str,ui->atCustomizeKeyListWidget);
     ui->atCustomizeKeyListWidget->addItem(item);
 }
-void MainWindow::saveToIrMaps(QString line)
-{
-    IR_map_t IR_map;
-
-    QStringList list1 = line.split(',');
-    bool ok;
-    IR_map.IR_type = list1.at(0).toInt(&ok,16);
-    //QByteArray ba = list1.at(1).toLatin1();
-    IR_map.name = list1.at(1);// ba.data();
-    qDebug() << "savetoIRmaps: IR_map.name:" << IR_map.name;
-    logstr = "savetoIRmaps: IR_map.name:";
-    logstr.append(IR_map.name);
-    output_log(logstr,0);
-
-    int len = list1.size() - 2 ;
-    QString str = list1.at(0);
-    QString tmp;
-    for(int i = 0; i< len;i++)
-    {
-        tmp = list1.at(i+2);
-        tmp.remove("0x");
-        str.append("-");
-        str.append(tmp);
-        tmp.clear();
-    }
-    IR_map.keyValue = str;
-
-    qDebug() << "savetoIRmaps: IR_map.keyValue:" << IR_map.keyValue;
-    logstr = "savetoIRmaps: IR_map.keyValue:";
-    logstr.append(IR_map.keyValue);
-    output_log(logstr,0);
-
-    IR_maps.append(IR_map);
-
-}
 
 /*
  * QString to char *
@@ -2073,15 +2041,8 @@ void MainWindow::add_to_list(QString button_name,uint32_t delay)
         }
     }
 
-    printIrItemInfo(IR_item);
-    //step2: add to IR_item list
-    //IR_items.append(IR_item);
+    //printIrItemInfo(IR_item);
 
-    //step3: update widget
-    //atAddItem2ScriptListWidget(IR_item.IR_type,button_name,IR_item.delay_time);
-
-    qDebug() << "ui->atScriptlistWidget->currentRow()" << ui->atScriptlistWidget->currentRow() ;
-       qDebug() << "ui->atScriptlistWidget->count()" << ui->atScriptlistWidget->count() ;
        int curRow = ui->atScriptlistWidget->currentRow();
        if((ui->atScriptlistWidget->currentRow()==-1)
                /*|| (ui->atScriptlistWidget->currentRow()==0)*/

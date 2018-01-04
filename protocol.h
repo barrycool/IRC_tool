@@ -194,11 +194,14 @@ struct IR_Upgrade_Packet_t {
     char data[UPGRADE_PACKET_SIZE];
 };
 
-
 #define SIRCS_CMD_MAX 40
 //extern struct IR_SIRCS_t IR_SIRCS_commands[SIRCS_DEV_MAX][SIRCS_CMD_MAX];
+extern bool String2IRLearningItem(QString src,IR_item_t *learningItem);
 extern bool HexString2Bytes(QString src,uint8_t* dst);
 extern QString byteArray2String(uint8_t *pData);
+extern void saveToIrMaps(QString line);
+extern void add_to_IR_Items(QString button_name,uint32_t delay);
+
 class protocol
 {
 public:

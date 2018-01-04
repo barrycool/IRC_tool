@@ -75,6 +75,7 @@ public:
 
     //QList ir_slot_List;
    void sendwificmd(QString cmd);
+   void startWithDebugMode(QString protocalFile,QString scriptFile,int loopcnt);
 
 private slots:
     void on_actionAbout_IRC_triggered();
@@ -195,12 +196,12 @@ private:
     bool isAutotestState;
     //bool isLearingkeyState;
     void ir_button_Slot_connect();
-    QList <IR_item_t> IR_items;
-    QList <IR_map_t> IR_maps;
+    //QList <IR_item_t> IR_items;
+    //QList <IR_map_t> IR_maps;
     void add_to_list(QString,uint32_t);
     QList <IR_map_t> learningkey_maps;
     void setToKeyListWidget(QString);
-    void saveToIrMaps(QString);
+    //void saveToIrMaps(QString);
     QTimer click_timer;
     int cmd_index;
     void output_log(QString,int);

@@ -132,20 +132,24 @@ void UpgradeThread::checkToolVersion()
     uint32_t dnewVersion;
     uint32_t checksum;
     QString appPath = qApp->applicationDirPath();
+    qDebug() <<"appPath:" <<appPath;
     QString szFileName = appPath.remove("/debug").remove("/release").append("/manifest.ini");
+     qDebug() <<"szFileName:" <<szFileName;
     QFile file(szFileName);
     if(!file.exists())
     {
         qDebug()<< szFileName  << "  not exsit!";
         return;
     }
-
+    qDebug() <<"111";
     //step1: 读ini文件里的version 信息
     QSettings *configIniRead = new QSettings(szFileName, QSettings::IniFormat);
+    qDebug() <<"222";
     //将读取到的ini文件保存在QString中，先取值，然后通过toString()函数转换成QString类型
     QString version = configIniRead->value("/upgrade/version").toString();
+    qDebug() <<"333";
     QString filename = configIniRead->value("filename").toString();
-
+    qDebug() <<"444";
     //打印得到的结果
     int newVersion = version.toInt();
     qDebug() << filename << " : " << version << " : " << newVersion;
