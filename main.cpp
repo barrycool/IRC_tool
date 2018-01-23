@@ -21,10 +21,10 @@ int main(int argc, char *argv[])
     if(argc > 1)
     {
         int c;
-        int i = 0;
+        //int i = 0;
         for(;;){
             //qDebug() << "idx= " << i;
-            c = getopt(argc,argv,"dl:p:t");
+            c = getopt(argc,argv,"dl:p:t:m");
             //qDebug() << "c= " << c;
             if(c < 0)
                 break;

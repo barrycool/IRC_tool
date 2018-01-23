@@ -309,7 +309,7 @@ void MainWindow::on_itemDoubleClicked(QListWidgetItem * item)
     {
         return;
     }
-    qDebug() << "before";
+    //qDebug() << "before";
     for(int i=0;i<IR_items.size();i++)
     {
         printIrItemInfo(IR_items.at(i));
@@ -344,7 +344,7 @@ void MainWindow::on_itemDoubleClicked(QListWidgetItem * item)
     IR_items.removeAt(index-1);
     IR_items.insert(index-1,ir_item);
 
-    qDebug() << "after";
+    //qDebug() << "after";
     for(int i=0;i<IR_items.size();i++)
     {
         printIrItemInfo(IR_items.at(i));
@@ -356,10 +356,9 @@ void MainWindow::update_IR_items_List()
     //clear IR_items first,then add all item in listwidget to IR_items
      QString button_name;
      IR_items.clear();
-     qDebug() << "update_IR_items_List";
+     //qDebug() << "update_IR_items_List";
      if(ui->atScriptlistWidget->count() <= 1)
      {
-         qDebug() << "111";
          return;
      }
      for(int j =1;j < ui->atScriptlistWidget->count();j++)
@@ -369,7 +368,6 @@ void MainWindow::update_IR_items_List()
          QStringList list = item->text().split(QRegExp("\\W+"), QString::SkipEmptyParts);
          if(list.size()<3)
          {
-             qDebug() << "222";
              return;
 
          }
@@ -377,14 +375,14 @@ void MainWindow::update_IR_items_List()
          IR_item.delay_time = list.at(2).toInt();
 
          button_name = list.at(1);
-         qDebug()  << button_name << list.at(2);
+         //qDebug()  << button_name << list.at(2);
 
          //step1: find the button keyvalue from keymap
          for(int i =0;i<IR_maps.size();i++)
          {
              if(button_name == IR_maps.at(i).name)
              {
-                 qDebug() << "found button:"<< IR_maps.at(i).name;
+                 //qDebug() << "found button:"<< IR_maps.at(i).name;
 
                  IR_item.IR_type = IR_maps.at(i).IR_type;
                  QByteArray ba = IR_maps.at(i).name.toLatin1();
@@ -392,7 +390,7 @@ void MainWindow::update_IR_items_List()
 
                  if(String2IRLearningItem(IR_maps.at(i).keyValue,&IR_item) != true)
                  {
-                     qDebug() << "update_IR_items_List fail";
+                     //qDebug() << "update_IR_items_List fail";
                      output_log("update_IR_items_List fail",0);
                  }
 
@@ -497,7 +495,7 @@ void MainWindow::httpDowloadFinished(bool flag)
 
     if (filename.size() != 0)
     {
-        qDebug () << filename;
+        //qDebug () << filename;
         if (check_valid_upgrade_bin_version(filename, availableVersion, checksum))
         {
             QString tmp = QString::number(availableVersion,16);
@@ -510,7 +508,7 @@ void MainWindow::httpDowloadFinished(bool flag)
             if(availableMcuVersion <= currentMcuVersion || availableMcuVersion ==0 || currentMcuVersion == 0)
             {
                 logstr ="currentMcuVersion is the latest version,no need to upgrade";
-                qDebug() << logstr;
+                //qDebug() << logstr;
                 output_log(logstr,1);
                 if(fupdiaglog !=NULL)
                 {
@@ -540,7 +538,7 @@ void MainWindow::httpDowloadFinished(bool flag)
                         //upgradethread->download_manifestini();
                     //}
                 }
-                qDebug() << logstr;
+                //qDebug() << logstr;
                 output_log(logstr,1);
             }
         }
@@ -598,7 +596,7 @@ void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
             {
                 log +=  QString::asprintf("%02X ", buf[j]); //QString(" %1").arg(buf[j]);
             }
-            qDebug() << log;
+            //qDebug() << log;
             output_log(log,0);
             /*------add for debug----------*/
         }
@@ -623,7 +621,7 @@ void MainWindow::sendCmd2MCU(uint8_t *buf,uint8_t len)
         {
             log +=  QString::asprintf("%02X ", buf[j]); //QString(" %1").arg(buf[j]);
         }
-        qDebug() << log;
+        //qDebug() << log;
         output_log(log,0);
 /*------add for debug----------*/
 
@@ -659,7 +657,7 @@ void MainWindow::sendcmdTimeout()
     }*/
     if(resendCount > FAIL_RETRY_TIMES)
     {
-        qDebug("retry for %d times still Timeout,quit!",FAIL_RETRY_TIMES);
+        //qDebug("retry for %d times still Timeout,quit!",FAIL_RETRY_TIMES);
 
         logstr = "cmd send fail";
         output_log(logstr,1);
@@ -669,7 +667,7 @@ void MainWindow::sendcmdTimeout()
         return;
     }
 
-    qDebug() <<"CMD Timeout,resend :" << resendCount;
+    //qDebug() <<"CMD Timeout,resend :" << resendCount;
     logstr = "cmd was handle tiemout,resend ";
     logstr += QString("%1 ").arg(resendCount);
     output_log(logstr,1);
@@ -745,12 +743,12 @@ void MainWindow::serial_receive_data()
     if (crc != buf[frame->data_len])
     {
         buf_len = 0;
-        qDebug() << "CRC32 err";
+        //qDebug() << "CRC32 err";
         output_log("CRC32 err",0);
         return;
     }
 
-    qDebug() << "receive packet:";
+    //qDebug() << "receive packet:";
     log = "receive packet:";
     //output_log(log,0);
 
@@ -759,7 +757,7 @@ void MainWindow::serial_receive_data()
         log += QString::asprintf("%02X ", buf[j]); //QString::number(buf[j],10);
         //log += " ";
     }
-    qDebug() << log;
+    //qDebug() << log;
     output_log(log,0);
 
     if(frame->msg == CMD_NACK)
@@ -767,19 +765,19 @@ void MainWindow::serial_receive_data()
         sendcmd_timer.stop();
         if (frame->msg_parameter[0] == UPGRADE_START || frame->msg_parameter[0] == SEND_UPGRADE_PACKET || frame->msg_parameter[0] == UPGRADE_FINISH)
         {
-            qDebug() <<"CMD_NACK of " << frame->msg_parameter[0];
+            //qDebug() <<"CMD_NACK of " << frame->msg_parameter[0];
             emit cmdFailSignal();
             return;
         }
         if (frame->msg_parameter[0] == READ_CMD_LIST)
         {
-            qDebug() <<"all commands are read out from mcu";
+            //qDebug() <<"all commands are read out from mcu";
             output_log("NAK: all commands are read out from mcu",1);
         }
         /*if(resendCount >= FAIL_RETRY_TIMES)
         {
             //qDebug() << "NAK :cmd not handled correctly";
-            qDebug("retry for %d times still NACK,quit!",FAIL_RETRY_TIMES);
+            //qDebug("retry for %d times still NACK,quit!",FAIL_RETRY_TIMES);
             output_log("NAK :cmd not handled correctly",1);
             resendCount = 0;
             //emit cmdFailSignal();
@@ -804,13 +802,13 @@ void MainWindow::serial_receive_data()
         }
         else if (frame->msg_parameter[0] == UPGRADE_START ||frame->msg_parameter[0] == SEND_UPGRADE_PACKET)
         {
-            qDebug() << "receive ack of " << frame->msg_parameter[0];
+            //qDebug() << "receive ack of " << frame->msg_parameter[0];
             //Sleep(200);
             emit receiveAckSignal(frame->msg_parameter[0]);
         }
         else if (frame->msg_parameter[0] == REAL_TIME_SEND)
         {
-            qDebug() << "REAL_TIME_SEND success";
+           // qDebug() << "REAL_TIME_SEND success";
             output_log("REAL_TIME_SEND success",1);
         }
         else if (frame->msg_parameter[0] == START_SEND)
@@ -840,7 +838,7 @@ void MainWindow::serial_receive_data()
         sendAck(frame->seq_num, frame->msg);
         uint8_t index = frame->msg_parameter[0];
 
-        qDebug() << "receive cmd list , index = " << index;
+        //qDebug() << "receive cmd list , index = " << index;
         logstr = "receive cmd list , index = ";
         logstr += QString("%1 ").arg(index);
         output_log(logstr,0);
@@ -878,8 +876,8 @@ void MainWindow::serial_receive_data()
                 break;
         }
         name = QString(QLatin1String(tmpBuf));
-        qDebug() << " name = " << name;
-        qDebug() << " ir_type = " << ir_item.IR_type;
+        //qDebug() << " name = " << name;
+        //qDebug() << " ir_type = " << ir_item.IR_type;
         logstr = "name = ";
         logstr.append(name);
         output_log(logstr,0);
@@ -893,7 +891,7 @@ void MainWindow::serial_receive_data()
         sendcmd_timer.stop();
         //sendAck((void *)buf);
         sendAck(frame->seq_num, frame->msg);
-        qDebug() << "receive MCU_VERSION: ";
+        //qDebug() << "receive MCU_VERSION: ";
         IR_MCU_Version_t mcuVersion;
 
         memcpy(&mcuVersion, frame->msg_parameter, sizeof(IR_MCU_Version_t));
@@ -921,13 +919,13 @@ void MainWindow::serial_receive_data()
         ui->leKeyTextEdit->clear();
 
         if(ui->leDebugModeCheckBox->isChecked() && lw != NULL){
-            qDebug() << "debug mode: send to learning wave ui ";
+            //qDebug() << "debug mode: send to learning wave ui ";
             lw->setWaveData(butname,wavedata,len);
             emit send2learningwave();
         }
         else if(!ui->leDebugModeCheckBox->isChecked())
         {
-            qDebug() << "non-debug mode: encode the data ";
+           // qDebug() << "non-debug mode: encode the data ";
             IR_encode(frame->msg_parameter + 1, len);
             //key value to string
 
@@ -973,7 +971,7 @@ void MainWindow::serial_receive_data()
             logstr = "current sending cmd idx: " + QString::asprintf("%d ; ", frame->msg_parameter[0]) + "loopcnt: " + QString::number(loopcnt+1);
 
         }
-        qDebug() <<logstr;
+        //qDebug() <<logstr;
         output_log(logstr,1);
          //loopcnt = currentSendCnt/ncmd + currentSendCnt % ncmd;
 
@@ -1075,13 +1073,13 @@ void MainWindow::printIrItemInfo(IR_item_t ir_item)
             break;
     }
     str.append(":" + QString::number(ir_item.delay_time));
-    qDebug() << str;
+    //qDebug() << str;
     output_log(str,0);
 }
 /*--------Lianlian add for cmd send nack and resend --- end--------*/
 void MainWindow::portChanged(int index)
 {
-    qDebug()<<"portChanged to: "<< index;
+    //qDebug()<<"portChanged to: "<< index;
     if(index == -1)
         return;
 
@@ -1164,7 +1162,7 @@ void MainWindow::on_actionOpenUart_triggered()
 
     if(serial.isOpen())
     {
-        qDebug() << "serial" << portBox->currentText() <<"is open,close it";
+        //qDebug() << "serial" << portBox->currentText() <<"is open,close it";
         serial.close();
         ui->actionOpenUart->setIcon(QIcon(":/new/icon/resource-icon/ball_red.png"));
         upgradethread->serialSetReady(false);
@@ -1174,7 +1172,7 @@ void MainWindow::on_actionOpenUart_triggered()
     }
     else
     {
-        qDebug() << "serial" << portBox->currentText() <<"is close,open it";
+        //qDebug() << "serial" << portBox->currentText() <<"is close,open it";
         if(serial.open(QIODevice::ReadWrite))
         {
             //serial.setBaudRate(ui->baudrateText->text().toInt());
@@ -1197,7 +1195,7 @@ void MainWindow::on_actionOpenUart_triggered()
             {
                 QString str = "open serial ";
                 str.append(portBox->currentText()).append(" fail\n");
-                qDebug() << str;
+                //qDebug() << str;
                 output_log(str,1);
             }
 
@@ -1214,7 +1212,7 @@ void MainWindow::on_actionFresh_triggered()
 {
     portBox->clear();
     QList<QSerialPortInfo> portList = QSerialPortInfo::availablePorts();
-    qDebug() << "fresh serial:how many ports:" << portList.size();
+    //qDebug() << "fresh serial:how many ports:" << portList.size();
 
     logstr = "fresh serial:";
     logstr +=QString("%1 ").arg(portList.size());
@@ -1272,7 +1270,7 @@ void MainWindow::on_actionUpgrade_triggered()
 
 void MainWindow::upgradedialog_reject()
 {
-    qDebug() << "upgradedialog_reject";
+    //qDebug() << "upgradedialog_reject";
     if(fupdiaglog != NULL)
     {
         delete fupdiaglog;
@@ -1287,7 +1285,7 @@ void MainWindow::returnfromUpgrade(bool needCloseSerial,uint32_t availableVersio
 {
     (void)availableVersion;
 
-    qDebug() << "return from upgrade";
+    //qDebug() << "return from upgrade";
     if(needCloseSerial)
     {
         //serial.close();
@@ -1316,7 +1314,7 @@ void MainWindow::on_actionLearningKey_triggered()
     ui->leCustomerText->clear();
     foreach(const QString procotol, IR_protocols)
     {
-        qDebug() << procotol;
+        //qDebug() << procotol;
         ui->leCustomerText->addItem(procotol);
     }
     connect(ui->leCustomerText, SIGNAL(currentIndexChanged(int)), this, SLOT(leSetIRDevice(int)));
@@ -1510,7 +1508,7 @@ void MainWindow::ir_button_Slot_connect()
 /*---------------------lianlian add for Upgrade----------------*/
 void MainWindow::sendCmdforUpgradeSlot(uint8_t *buf,int len)
 {
-    qDebug() << "sendCmdforUpgradeSlot";
+    //qDebug() << "sendCmdforUpgradeSlot";
     /*if(!serial.isOpen())
     {
         logstr = "serial is not open!";
@@ -1531,7 +1529,7 @@ void MainWindow::getCurrentMcuVersion()
     /*if(!serial.isOpen())
     {
         QMessageBox::warning(this,"Error","Please Open Serial Port First!\n");
-        qDebug() << "serial is not open,cannot check mcu's version";
+        //qDebug() << "serial is not open,cannot check mcu's version";
         logstr = "serial is not open!";
         output_log(logstr,0);
         return;
@@ -1576,7 +1574,7 @@ void MainWindow::loadInsetIrMapTable()
     if(!insetIrMapTableDir.exists())
     {
         logstr = "KeyMapConfig doesn't exist";
-        qDebug() << logstr;
+        //qDebug() << logstr;
         output_log(logstr,1);
 
         //QMessageBox::information(this,"Error","There's no inset IrMapTable Dir!");
@@ -1584,7 +1582,7 @@ void MainWindow::loadInsetIrMapTable()
         if( ok )
         {
             logstr = "KeyMapConfig created success.";
-            qDebug() << logstr;
+            //qDebug() << logstr;
             output_log(logstr,0);
         }
 
@@ -1595,7 +1593,7 @@ void MainWindow::loadInsetIrMapTable()
     if(fileNames.size()==0)
     {
         logstr = "InsetKeyMap files don't exist";
-        qDebug() << logstr;
+        //qDebug() << logstr;
         output_log(logstr,1);
         QMessageBox::information(this,"Error","There's no inset IrMapTable file!");
         return;
@@ -1606,14 +1604,14 @@ void MainWindow::loadInsetIrMapTable()
         if(fileNames.at(index)=="." || fileNames.at(index)=="..")
             continue;
 
-        qDebug() << fileNames.at(index);
+        //qDebug() << fileNames.at(index);
         QString filename = fileNames.at(index);
         QStringList customDevice = filename.split(QRegExp("[%.]"), QString::SkipEmptyParts);
         /*QStringList fileNamePure = filename.split(".");
         QString filenamePure0 = fileNamePure.at(0);
         QStringList customDevice = filenamePure0.split("_");*/
         QString custom = customDevice.at(0);
-        qDebug() << custom;
+        //qDebug() << custom;
         QString device = customDevice.at(1);
 
         logstr = custom + ":" + device;
@@ -1625,9 +1623,9 @@ void MainWindow::loadInsetIrMapTable()
         logstr += QString("%1 ").arg(irProtocolsCount);
         output_log(logstr,0);
 
-        qDebug() << device;
-        qDebug() <<"IR_protocols.count()" << IR_protocols.count();
-        qDebug() <<"irProtocolsCount" << irProtocolsCount;
+        //qDebug() << device;
+        //qDebug() <<"IR_protocols.count()" << IR_protocols.count();
+        //qDebug() <<"irProtocolsCount" << irProtocolsCount;
 
         if(IR_protocols.count() == 0)
         {
@@ -1636,8 +1634,8 @@ void MainWindow::loadInsetIrMapTable()
             IR_SIRCS_devices[0]<<device;
             totalIrProtocols = 1;
             irProtocolsCount = 0;
-            qDebug() << " IR_protocols.at(0)="<<IR_protocols.at(0);
-            qDebug() << " IR_SIRCS_devices[0].at(0)="<<IR_SIRCS_devices[0].at(0);
+            //qDebug() << " IR_protocols.at(0)="<<IR_protocols.at(0);
+            //qDebug() << " IR_SIRCS_devices[0].at(0)="<<IR_SIRCS_devices[0].at(0);
         }
         else
         {
@@ -1647,8 +1645,8 @@ void MainWindow::loadInsetIrMapTable()
                 if(IR_protocols.at(index) == custom)
                 {
                     IR_SIRCS_devices[index]<<device;
-                    qDebug() << " IR_protocols.at(index)="<<IR_protocols.at(index);
-                    qDebug() << " IR_SIRCS_devices[index].at(0)="<<IR_SIRCS_devices[index].at(IR_SIRCS_devices[index].count()-1);
+                    //qDebug() << " IR_protocols.at(index)="<<IR_protocols.at(index);
+                    //qDebug() << " IR_SIRCS_devices[index].at(0)="<<IR_SIRCS_devices[index].at(IR_SIRCS_devices[index].count()-1);
                     irFinishMap = true;
                     break;
                 }
@@ -1672,8 +1670,8 @@ void MainWindow::loadInsetIrMapTable()
                 IR_protocols<<custom;
                 IR_SIRCS_devices[irProtocolsCount]<<device;
                 totalIrProtocols = irProtocolsCount+1;
-                qDebug() << " IR_protocols.at(irProtocolsCount)="<<IR_protocols.at(irProtocolsCount);
-                qDebug() << " IR_SIRCS_devices[irProtocolsCount].at(0)="<<IR_SIRCS_devices[irProtocolsCount].at(IR_SIRCS_devices[irProtocolsCount].count()-1);
+                //qDebug() << " IR_protocols.at(irProtocolsCount)="<<IR_protocols.at(irProtocolsCount);
+                //qDebug() << " IR_SIRCS_devices[irProtocolsCount].at(0)="<<IR_SIRCS_devices[irProtocolsCount].at(IR_SIRCS_devices[irProtocolsCount].count()-1);
             }
         }
     }
@@ -1693,7 +1691,7 @@ void MainWindow::set_IR_protocol()
     ui->atCustomerCombox->clear();
     foreach(const QString procotol, IR_protocols)
     {
-        qDebug() << procotol;
+        //qDebug() << procotol;
         ui->atCustomerCombox->addItem(procotol);
     }
 
@@ -1709,7 +1707,7 @@ void MainWindow::set_IR_device(int index)
 
     disconnect(ui->atDeviceCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_command_list);
 
-    qDebug() << "set_IR_device";
+    //qDebug() << "set_IR_device";
      output_log("set_IR_device",0);
     ui->atDeviceCombox->clear();
     foreach(const QString device, IR_SIRCS_devices[index])
@@ -1726,20 +1724,20 @@ void MainWindow::set_IR_device(int index)
 int index = 0;
 void MainWindow::set_IR_command_list()
 {
-    qDebug() << "set_IR_command_list";
+    //qDebug() << "set_IR_command_list";
     output_log("set_IR_command_list",0);
     ui->atCustomizeKeyListWidget->clear();
     QString fileName=ui->atCustomerCombox->currentText()+"%"+ui->atDeviceCombox->currentText()+".ini";
     QString appPath = qApp->applicationDirPath();
     QString insetIrMapTablePath = appPath.append("\\KeyMapConfig\\");
     QString filePath = insetIrMapTablePath+fileName;
-    qDebug() << filePath;
+    //qDebug() << filePath;
 
     QFile *file = new QFile;
     file->setFileName(filePath);
     if(!file->open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        qDebug() << "filePath open fail";
+        //qDebug() << "filePath open fail";
         logstr = filePath.append(" open fail");
         output_log(logstr,1);
         return;
@@ -1747,9 +1745,9 @@ void MainWindow::set_IR_command_list()
 
     QTextStream in(file);
     QString line = in.readLine();//read custom name
-    qDebug() << "custom name" << line;
+    //qDebug() << "custom name" << line;
     line = in.readLine();//read device name
-    qDebug() << "device name" << line;
+    //qDebug() << "device name" << line;
     //should add NEC
 
     IR_maps.clear();
@@ -1792,7 +1790,7 @@ void MainWindow::setToKeyListWidget(QString line)
     index++;
     //QByteArray ba = list1.at(1).toLatin1();
     buttonName = list1.at(1);//ba.data();
-    qDebug() << "loadkeymap:buttonName " << buttonName;
+    //qDebug() << "loadkeymap:buttonName " << buttonName;
 
     str = IR_index.append("     ").append(buttonName/*QString(QLatin1String(buttonName))*/);
     QListWidgetItem *item = new QListWidgetItem(str,ui->atCustomizeKeyListWidget);
@@ -1810,7 +1808,7 @@ void MainWindow::setToKeyListWidget(QString line)
 
 void MainWindow::atReadPushButton_slot()
 {
-    qDebug() << "atReadPushButton_slot:read current cmd list from mcu\n";
+    //qDebug() << "atReadPushButton_slot:read current cmd list from mcu\n";
     atClearScriptWidget();
     //IR_items.clear();
 
@@ -1876,7 +1874,7 @@ void MainWindow::atScriptlistWidgetClicked_slot(QListWidgetItem* item)
 
 void MainWindow::dragLeaveEventSlot(int row)
 {
-    qDebug() << "dragLeaveEventSlot:row = " << row;
+    //qDebug() << "dragLeaveEventSlot:row = " << row;
     /*
     qDebug() << "before";
     for(int i=0;i<IR_items.size();i++)
@@ -1910,7 +1908,7 @@ void MainWindow::dropSlotforScriptlw(QString btnname,int row)
                                                &isOK);
      */
     uint32_t delaytime = 5000;
-    qDebug() << "drag into:"<<btnname<<"--"<<delaytime<<"---"<<row;
+    //qDebug() << "drag into:"<<btnname<<"--"<<delaytime<<"---"<<row;
     ui->atScriptlistWidget->setCurrentRow(row);
     add_to_list(btnname,delaytime);
 }
@@ -1987,7 +1985,7 @@ void MainWindow::atAddItem2ScriptListWidget(int ir_type,QString button_name,int 
 }
 void MainWindow::textChanged_SLOT(const QString &text)
 {
-    qDebug() << "textChanged_SLOT :" << text;
+    //qDebug() << "textChanged_SLOT :" << text;
     //int index = ui->atScriptlistWidget->currentRow()-1;
     //IR_items.at(index).delay_time = text.toInt();
 }
@@ -2003,7 +2001,7 @@ void MainWindow::add_to_list(QString button_name,uint32_t delay)
     {
         if(button_name == IR_maps.at(i).name)
         {
-            qDebug() << "found button:"<< IR_maps.at(i).name;
+            //qDebug() << "found button:"<< IR_maps.at(i).name;
 
             IR_item.IR_type = IR_maps.at(i).IR_type;
             QByteArray ba = IR_maps.at(i).name.toLatin1();
@@ -2011,7 +2009,7 @@ void MainWindow::add_to_list(QString button_name,uint32_t delay)
 
             if(String2IRLearningItem(IR_maps.at(i).keyValue,&IR_item) != true)
             {
-                qDebug() << "add_to_list fail";
+                //qDebug() << "add_to_list fail";
                 output_log("add_to_list fail",0);
             }
 
@@ -2093,7 +2091,7 @@ void MainWindow::atAddButton_slot()
     if(ui->atScriptlistWidget->count() >=40 )
     {
         logstr = "Can not add more then 20 cmds!";
-        qDebug() << logstr;
+       // qDebug() << logstr;
         output_log(logstr,1);
         return;
     }
@@ -2105,7 +2103,7 @@ void MainWindow::atAddButton_slot()
     {
         if(ui->atCustomizeKeyListWidget->currentRow()== -1)
         {
-            qDebug()<< "No key has been chosen!";
+           // qDebug()<< "No key has been chosen!";
             //output_log(logstr,1);
             //return;
             ui->atCustomizeKeyListWidget->setCurrentRow(0);
@@ -2177,7 +2175,7 @@ void MainWindow::atLoadscriptBut_slot()
     if(fileName.isEmpty())
     {
         //QMessageBox::information(this,"Error","Please select a file");
-        qDebug() << "Please select a file\n";
+        //qDebug() << "Please select a file\n";
 
         return;
     }
@@ -2190,10 +2188,10 @@ void MainWindow::atLoadscriptBut_slot()
       QTextStream in(file);  //文件与文本流相关联
       QString customer = in.readLine();//读取第一行;
       QString device = in.readLine();//读取第二行;
-      qDebug() << customer <<"  " <<device;
+      //qDebug() << customer <<"  " <<device;
       if(ui->atCustomerCombox->currentText()!= customer || ui->atDeviceCombox->currentText()!=device)
       {
-          qDebug() << "please select the right Customer and Device";
+          //qDebug() << "please select the right Customer and Device";
           QMessageBox::StandardButton reply = QMessageBox::question(this, "ScriptFile not Match KeyMap", "Do you want to Switch to the matched KeyMap?", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
           if(reply == QMessageBox::Yes)
           {
@@ -2204,7 +2202,7 @@ void MainWindow::atLoadscriptBut_slot()
           }
           else
           {
-              qDebug() << "load script fail";
+              //qDebug() << "load script fail";
               logstr =  "load script fail :";
               logstr.append(fileName);
               output_log(logstr,1);
@@ -2253,7 +2251,7 @@ void MainWindow::atSaveButton_slot()
       out << ui->atCustomerCombox->currentText() << "\n";
       out << ui->atDeviceCombox->currentText() << "\n";
 
-      qDebug() << "IR_items.size(): " << IR_items.size();
+      //qDebug() << "IR_items.size(): " << IR_items.size();
 
       for(int i = 0;i < IR_items.size();i++)
       {
@@ -2336,7 +2334,7 @@ void MainWindow::atRealTimeSendButton_slot()
 
             if(String2IRLearningItem(IR_maps.at(i).keyValue,&ir_item) != true)
             {
-                qDebug() << "transfer fail";
+                //qDebug() << "transfer fail";
             }
 
             switch(ir_item.IR_type)
@@ -2366,7 +2364,7 @@ void MainWindow::atRealTimeSendButton_slot()
         }
     }
 
-    qDebug() << "atRealTimeSendButton_slot:";
+    //qDebug() << "atRealTimeSendButton_slot:";
     printIrItemInfo(ir_item);
     memcpy(frame->msg_parameter,&ir_item,sizeof(IR_item_t));
     frame->data_len += sizeof(IR_item_t);
@@ -2386,11 +2384,11 @@ void MainWindow::set_cmd_list_handle()
 {
     if (cmd_index >= IR_items.size())
     {
-        qDebug() << "cmd list send finished";
+        //qDebug() << "cmd list send finished";
         output_log("cmd list send finished",1);
         return;
     }
-    qDebug() << "send SET_CMD_LIST to mcu,cmd_index = " <<cmd_index;
+   // qDebug() << "send SET_CMD_LIST to mcu,cmd_index = " <<cmd_index;
 
     uint8_t buf[BUF_LEN];
     memset(buf,0x0,BUF_LEN);
@@ -2424,7 +2422,7 @@ void MainWindow::set_cmd_list_handle()
 
 void MainWindow::clear_cmd_list_handle()
 {
-    qDebug() << "clear_cmd_list_handle:send CLEAR_CMD_LIST to mcu\n";
+    //qDebug() << "clear_cmd_list_handle:send CLEAR_CMD_LIST to mcu\n";
     output_log("send CLEAR_CMD_LIST to mcu",1);
     uint8_t buf[BUF_LEN];
     memset(buf,0x0,BUF_LEN);
@@ -2442,7 +2440,7 @@ void MainWindow::clear_cmd_list_handle()
 
 void MainWindow::atDownloadButton_slot()
 {
-    qDebug() << "Download cmd list to mcu\n";
+    //qDebug() << "Download cmd list to mcu\n";
     output_log("start Download cmd list to mcu...",1);
 
     /*if (!serial.isOpen())
@@ -2473,7 +2471,7 @@ void MainWindow::atStartButton_slot()
 
     if(ui->atStartButton->text() == "Start")
     {
-        qDebug() << "send START_SEND";
+        //qDebug() << "send START_SEND";
         if(ui->atSndCntTotaltext->text().toInt() == 0)
         {
             output_log("Set loopCount First Please!!",1);
@@ -2486,7 +2484,7 @@ void MainWindow::atStartButton_slot()
     else if(ui->atStartButton->text() == "Stop")
     {
 
-        qDebug() << "send PAUSE_SEND";
+        //qDebug() << "send PAUSE_SEND";
         output_log("pause the loop test.",1);
         frame->msg = PAUSE_SEND;//CLEAR_CMD_LIST;
 
@@ -2516,7 +2514,7 @@ void MainWindow::leIrPanel_slot()
 {
     QPushButton* btn = dynamic_cast<QPushButton*>(sender());
     ui->leButtonText->setText(btn->toolTip());
-    qDebug() << btn->toolTip() << "is clicked in learning key ir panel\n";
+    //qDebug() << btn->toolTip() << "is clicked in learning key ir panel\n";
     //QMessageBox::information(this,"info","Learning Power button is clicked\n");
 }
 
@@ -2551,7 +2549,7 @@ void MainWindow::leRealTimeTestButton_slot()
 
     if(String2IRLearningItem(btnkey,&ir_item)==false)
     {
-        qDebug() << " tansfer fail! ";
+        //qDebug() << " tansfer fail! ";
         output_log("get ir_item fail",1);
         return;
     }
@@ -2584,7 +2582,7 @@ void MainWindow::leRealTimeTestButton_slot()
     }
     logstr = "leRealTimeTestButton_slot: send button:";
     logstr.append(tmpBuf);
-    qDebug() << logstr;
+    //qDebug() << logstr;
     output_log(logstr,1);
     printIrItemInfo(ir_item);
     //serial.setBaudRate(QSerialPort::Baud115200);
@@ -2681,7 +2679,7 @@ void MainWindow::leStartRecordButton_slot()
 
 void MainWindow::returnfromLearningWave()
 {
-    qDebug()<< "learning wave menu close!";
+    //qDebug()<< "learning wave menu close!";
     delete lw;
     ui->leDebugModeCheckBox->setDisabled(false);
     ui->leStartRecordBut->setDisabled(false);
@@ -2792,10 +2790,10 @@ void MainWindow::leSaveKeymapButton_slot()
     if(keymapfile->exists())
     {
         //文件已存在,追加到文件末尾
-        qDebug() << "文件已存在\n";
+       // qDebug() << "文件已存在\n";
         if(!keymapfile->open(QIODevice::WriteOnly | QIODevice::Text|QIODevice::Append))
         {
-            qDebug() << "打开文件失败\n";
+            //qDebug() << "打开文件失败\n";
             QMessageBox::critical(this,"Save Fail","Save Key map to file ERROR,Can't open file");
             return ;
         }
@@ -2804,11 +2802,11 @@ void MainWindow::leSaveKeymapButton_slot()
     else
     {
         //文件不存在,创建新文件
-        qDebug() << "文件不存在,新建文件 " << filename << "\n";
+        //qDebug() << "文件不存在,新建文件 " << filename << "\n";
 
         if(!keymapfile->open(QIODevice::WriteOnly | QIODevice::Text))
         {
-            qDebug() << "打开文件失败\n";
+            //qDebug() << "打开文件失败\n";
             QMessageBox::critical(this,"Save Fail","Save Key map to file ERROR,Can't open file");
             return ;
         }
@@ -2816,11 +2814,11 @@ void MainWindow::leSaveKeymapButton_slot()
         out << ui->leCustomerText->currentText() << "\n";
         out << ui->leDeviceText->currentText() << "\n";
     }
-    qDebug() << "save:leKeymaplistWidget total count is " << ui->leKeymaplistWidget->count();
+   // qDebug() << "save:leKeymaplistWidget total count is " << ui->leKeymaplistWidget->count();
     for(int i = 0;i < ui->leKeymaplistWidget->count();i++)
     {
         QListWidgetItem *item = ui->leKeymaplistWidget->item(i);
-        qDebug() << " item.text in row " << i << "is" << item->text();
+        //qDebug() << " item.text in row " << i << "is" << item->text();
         QString src = item->text();
         QStringList list1 = src.split(":");
         QString type =list1.at(0); // ir_type
@@ -2835,7 +2833,7 @@ void MainWindow::leSaveKeymapButton_slot()
             tmp.insert(0,"0x");
             dst.append(",").append(tmp);
         }
-        qDebug() << " transfer to " << dst;
+        //qDebug() << " transfer to " << dst;
        out << dst << "\n";
     }
     keymapfile->close();
@@ -2894,27 +2892,27 @@ void MainWindow::logSaveButton_slot()
 
     logstr = "logDirPath is ";
     logstr.append(logDirPath);
-    qDebug() << logstr;
+   // qDebug() << logstr;
     output_log(logstr,1);
 
     QDir *dir = new QDir(logDirPath);
     if(!dir->exists())
     {
         logstr = "logDirPath doesn't exist";
-        qDebug() << logstr;
+        //qDebug() << logstr;
         output_log(logstr,1);
 
         bool ok = dir->mkdir(logDirPath);
         if( ok )
         {
             logstr = "logDirPath created success.";
-            qDebug() << logstr;
+            //qDebug() << logstr;
             output_log(logstr,0);
         }
         else
         {
             logstr = "save fail.";
-            qDebug() << logstr;
+            //qDebug() << logstr;
             output_log(logstr,1);
             return;
         }
@@ -2929,7 +2927,7 @@ void MainWindow::logSaveButton_slot()
 
     logstr = "save to file: ";
     logstr.append(filename);
-    qDebug() << logstr;
+    //qDebug() << logstr;
     //output_log(logstr,1);
 
     QFile logfile( filename );
@@ -2937,11 +2935,11 @@ void MainWindow::logSaveButton_slot()
     logfile.close();  //创建文件
     if(logfile.exists())
     {
-        qDebug() << "log 文件创建成功";
+        //qDebug() << "log 文件创建成功";
     }
     else
     {
-        qDebug() << "log 文件创建失败";
+        //qDebug() << "log 文件创建失败";
     }
 
 
@@ -2955,7 +2953,7 @@ void MainWindow::logSaveButton_slot()
     }
     else
     {
-        qDebug("save fail!");
+        //qDebug("save fail!");
         //output_log("save fail!",1);
     }
 
@@ -2964,8 +2962,8 @@ void MainWindow::logSaveButton_slot()
 
 void MainWindow::on_atUpMove_clicked()
 {
-    qDebug() << "ui->atScriptlistWidget->currentRow()" << ui->atScriptlistWidget->currentRow() ;
-    qDebug() << "ui->atScriptlistWidget->count()" << ui->atScriptlistWidget->count() ;
+    //qDebug() << "ui->atScriptlistWidget->currentRow()" << ui->atScriptlistWidget->currentRow() ;
+    //qDebug() << "ui->atScriptlistWidget->count()" << ui->atScriptlistWidget->count() ;
     int curRow = ui->atScriptlistWidget->currentRow();
     if (curRow == -1 || curRow == 0 || curRow == 1 || IR_items.count() <= 1)
         return;
@@ -3005,8 +3003,8 @@ void MainWindow::on_atUpMove_clicked()
 
 void MainWindow::on_atDownMove_clicked()
 {
-    qDebug() << "ui->atScriptlistWidget->currentRow()" << ui->atScriptlistWidget->currentRow() ;
-        qDebug() << "ui->atScriptlistWidget->count()" << ui->atScriptlistWidget->count() ;
+    //qDebug() << "ui->atScriptlistWidget->currentRow()" << ui->atScriptlistWidget->currentRow() ;
+        //qDebug() << "ui->atScriptlistWidget->count()" << ui->atScriptlistWidget->count() ;
         int curRow = ui->atScriptlistWidget->currentRow();
         if (curRow == -1 || curRow == 0 || IR_items.count() <= 1 || curRow == IR_items.count())
             return;
@@ -3055,20 +3053,20 @@ void MainWindow::on_actionDown_Binary_triggered()
     if(!dir->exists())
     {
         logstr = fileDir + " doesn't exist";
-        qDebug() << logstr;
+        //qDebug() << logstr;
         output_log(logstr,1);
 
         bool ok = dir->mkdir(fileDir);
         if( ok )
         {
             logstr = "fileDir created success.";
-            qDebug() << logstr;
+            //qDebug() << logstr;
             output_log(logstr,0);
         }
         else
         {
             logstr = "download fail.";
-            qDebug() << logstr;
+            //qDebug() << logstr;
             output_log(logstr,1);
             return;
         }
@@ -3078,7 +3076,7 @@ void MainWindow::on_actionDown_Binary_triggered()
     QFile binFile(filePath);
     if(binFile.exists())
     {
-        qDebug() << "IR_stm32f103C8.bin exsit,delete it first";
+        //qDebug() << "IR_stm32f103C8.bin exsit,delete it first";
         QFile::remove(filePath);
     }
 
@@ -3107,20 +3105,20 @@ void MainWindow::on_actionDownload_MainTool_triggered()
     if(!dir->exists())
     {
         logstr = fileDir + " doesn't exist";
-        qDebug() << logstr;
+       // qDebug() << logstr;
         output_log(logstr,1);
 
         bool ok = dir->mkdir(fileDir);
         if( ok )
         {
             logstr = "fileDir created success.";
-            qDebug() << logstr;
+           // qDebug() << logstr;
             output_log(logstr,1);
         }
         else
         {
             logstr = "download fail.";
-            qDebug() << logstr;
+           // qDebug() << logstr;
             output_log(logstr,1);
             return;
         }
@@ -3151,20 +3149,20 @@ void MainWindow::on_actionDownload_UserManual_triggered()
     if(!dir->exists())
     {
         logstr = fileDir + " doesn't exist";
-        qDebug() << logstr;
+        //qDebug() << logstr;
         output_log(logstr,1);
 
         bool ok = dir->mkdir(fileDir);
         if( ok )
         {
             logstr = "fileDir created success.";
-            qDebug() << logstr;
+            //qDebug() << logstr;
             output_log(logstr,0);
         }
         else
         {
             logstr = "download fail.";
-            qDebug() << logstr;
+            //qDebug() << logstr;
             output_log(logstr,1);
             return;
         }
@@ -3201,7 +3199,7 @@ void MainWindow::on_actionDownload_SerialDriver_triggered()
         else
         {
             logstr = "download fail.";
-            qDebug() << logstr;
+            //qDebug() << logstr;
             output_log(logstr,1);
             return;
         }
@@ -3297,7 +3295,7 @@ void MainWindow::atButtonList_init()
 void MainWindow::fresh_atIrPanel()
 {
     atButtonList_init();
-    qDebug() << "fresh_atIrPanel";
+    //qDebug() << "fresh_atIrPanel";
     bool hasfound = false;
     bool takeit = false;
     QPushButton *but;
@@ -3319,7 +3317,7 @@ void MainWindow::fresh_atIrPanel()
         }
         if(!hasfound)
         {
-            qDebug() << btnname << "is not found!customizing...";
+           // qDebug() << btnname << "is not found!customizing...";
 
             for(j=0;j<atbuttonList.size();j++)
             {
@@ -3327,7 +3325,7 @@ void MainWindow::fresh_atIrPanel()
                 takeit = false;
                 if(but == ui->atCustom1 && ui->atCustom1->isEnabled() == false)
                 {
-                    qDebug() << "Custom1";
+                   // qDebug() << "Custom1";
                     ui->atCustom1->setText(btnname);
                     ui->atCustom1->setToolTip(btnname);
                     ui->atCustom1->setEnabled(true);
@@ -3337,7 +3335,7 @@ void MainWindow::fresh_atIrPanel()
                 }
                 else if(but == ui->atCustom2 && ui->atCustom2->isEnabled() == false)
                 {
-                    qDebug() << "Custom2";
+                    //qDebug() << "Custom2";
                     ui->atCustom2->setText(btnname);
                     ui->atCustom2->setToolTip(btnname);
                     ui->atCustom2->setEnabled(true);
@@ -3348,7 +3346,7 @@ void MainWindow::fresh_atIrPanel()
                 }
                 else if(but == ui->atCustom3 && ui->atCustom3->isEnabled() == false)
                 {
-                    qDebug() << "Custom3";
+                    //qDebug() << "Custom3";
                     ui->atCustom3->setText(btnname);
                     ui->atCustom3->setToolTip(btnname);
                     ui->atCustom3->setEnabled(true);
@@ -3359,7 +3357,7 @@ void MainWindow::fresh_atIrPanel()
                 }
                 else if(atbuttonList.at(j).isEnable == false && atbuttonList.at(j).canbeCustomized)
                 {
-                    qDebug() << "others";
+                    //qDebug() << "others";
                     atbuttonList.at(j).buttonWidget->setText(btnname);
                     atbuttonList.at(j).buttonWidget->setToolTip(btnname);
                     //atbuttonList.at(j).isEnable = true;
@@ -3376,7 +3374,7 @@ void MainWindow::fresh_atIrPanel()
             }
             else
             {
-                qDebug() << btnname << " has to be dropped!";
+                //qDebug() << btnname << " has to be dropped!";
                 output_log(btnname + " has to be dropped!",1);
             }
         }

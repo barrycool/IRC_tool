@@ -29,11 +29,11 @@ void UpgradeThread::download_mcuBin()
     QString appPath = qApp->applicationDirPath();
     QString fileDir = appPath.remove("/debug").remove("/release").append("/IR_stm32f103C8.bin");
 
-    qDebug() << fileDir;
+    //qDebug() << fileDir;
     QFile binFile(fileDir);
     if(binFile.exists())
     {
-        qDebug() << "IR_stm32f103C8.bin exsit,delete it first";
+        //qDebug() << "IR_stm32f103C8.bin exsit,delete it first";
         QFile::remove(fileDir);
     }
 
@@ -65,7 +65,7 @@ void UpgradeThread::download_manifestini()
     QFile iniFile(dstfilepath);
     if(iniFile.exists())
     {
-        qDebug() << "manifest.ini exsit,delete it first";
+        //qDebug() << "manifest.ini exsit,delete it first";
         QFile::remove(dstfilepath);
     }
     SHELLEXECUTEINFO  ShExecInfo;
@@ -91,7 +91,7 @@ void UpgradeThread::download_mainTool()
     QFile iniFile(dstfilepath);
     if(iniFile.exists())
     {
-        qDebug() << "Smart_IR.exe exsit,delete it first";
+       // qDebug() << "Smart_IR.exe exsit,delete it first";
         QFile::remove(dstfilepath);
     }
 
@@ -126,7 +126,7 @@ void UpgradeThread::checkToolVersion()
     {
         return;
     }
-    qDebug() <<"checkToolVersion";
+    //qDebug() <<"checkToolVersion";
 /* CRC信息和版本信息存储在另外的ini配置文件中，只需下载ini配置文件，判断有新版本后再下载tool*/
     uint32_t xnewVersion;
     uint32_t dnewVersion;
@@ -136,7 +136,7 @@ void UpgradeThread::checkToolVersion()
     QFile file(szFileName);
     if(!file.exists())
     {
-        qDebug()<< szFileName  << "  not exsit!";
+        //qDebug()<< szFileName  << "  not exsit!";
         return;
     }
 
@@ -175,17 +175,17 @@ void UpgradeThread::checkToolVersion()
         //step4：下载tool完成后，判断tool的checksum和Version，若OK，则升级
         if(check_valid_upgrade_bin_version(szFileName,dnewVersion,checksum))
         {
-            qDebug() << "dnewVersion : " << dnewVersion;
+            //qDebug() << "dnewVersion : " << dnewVersion;
             QString tmp = QString::number(dnewVersion,16); //10进制转成16进制
             xnewVersion = tmp.toInt();
-            qDebug() << "xnewVersion : " << xnewVersion;
+            //qDebug() << "xnewVersion : " << xnewVersion;
             if(xnewVersion == newVersion && newVersion> VERSION)
             {
                 emit maintoolNeedUpdate(version);
             }
             else
             {
-                qDebug() << "version info is not matched!";
+                //qDebug() << "version info is not matched!";
             }
         }
         else

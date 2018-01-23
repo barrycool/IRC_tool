@@ -57,7 +57,7 @@ void saveToIrMaps(QString line)
     IR_map.IR_type = list1.at(0).toInt(&ok,16);
     //QByteArray ba = list1.at(1).toLatin1();
     IR_map.name = list1.at(1);// ba.data();
-    qDebug() << "savetoIRmaps: IR_map.name:" << IR_map.name;
+    //qDebug() << "savetoIRmaps: IR_map.name:" << IR_map.name;
     //logstr = "savetoIRmaps: IR_map.name:";
     //logstr.append(IR_map.name);
     //output_log(logstr,0);
@@ -75,7 +75,7 @@ void saveToIrMaps(QString line)
     }
     IR_map.keyValue = str;
 
-    qDebug() << "savetoIRmaps: IR_map.keyValue:" << IR_map.keyValue;
+    //qDebug() << "savetoIRmaps: IR_map.keyValue:" << IR_map.keyValue;
     //logstr = "savetoIRmaps: IR_map.keyValue:";
     //logstr.append(IR_map.keyValue);
     //output_log(logstr,0);

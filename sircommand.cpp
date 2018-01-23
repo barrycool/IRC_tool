@@ -253,7 +253,7 @@ void SirCommand::receive_data()
         log += QString::asprintf("%02X ", gbuf[j]); //QString::number(gbuf[j],10);
         //log += " ";
     }
-    qDebug() << log;
+    //qDebug() << log;
     //output_log(log,0);
 
     if(frame->msg == CMD_NACK)
@@ -284,7 +284,7 @@ void SirCommand::receive_data()
         }
         else if (frame->msg_parameter[0] == PAUSE_SEND)
         {
-
+            qDebug() << "pause send ok!";
         }
     }
     else if (frame->msg == SET_CMD_LIST)

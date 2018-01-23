@@ -105,7 +105,7 @@ void UpgradeDialog::onLookupHost(QHostInfo host)
 {
     if (host.error() != QHostInfo::NoError)
     {
-        qDebug() << "Lookup failed:" << host.errorString();
+        //qDebug() << "Lookup failed:" << host.errorString();
         isNetworkAccessable = false;
         ui->upStatusText->append("Network is not accessible");
     }
@@ -144,14 +144,14 @@ void UpgradeDialog::updateCurrentVersionSlot(uint32_t curVersion,uint32_t latest
     if(availableMcuVersion <= currentMcuVersion)
     {
         QString logstr ="currentMcuVersion is the latest version,no need to upgrade";
-        qDebug() << logstr;
+        //qDebug() << logstr;
         ui->upStatusText->append(logstr);
         ui->upUpgradeButton->setEnabled(false);
     }
     else
     {
         QString logstr = "Newer MCU version is available,Please Upgrade";
-        qDebug() << logstr;
+        //qDebug() << logstr;
         ui->upStatusText->append(logstr);
         ui->upUpgradeButton->setEnabled(true);
         dstBinFilePath = appPath.remove("/debug").remove("/release").append("/IR_stm32f103C8.bin");
@@ -168,7 +168,7 @@ void UpgradeDialog::updateCurrentVersionSlot(uint32_t curVersion,uint32_t latest
 
 void UpgradeDialog::SendCmd2GetCurrentVersion()
 {
-    qDebug() << "send signal to mainwindow to getcurrent mcu version";
+    //qDebug() << "send signal to mainwindow to getcurrent mcu version";
     emit getVersionSignal();
 }
 
@@ -187,18 +187,18 @@ void UpgradeDialog::checkForMcuUpgrade()
             if(!dir->exists())
             {
                 logstr = fileDir + " doesn't exist";
-                qDebug() << logstr;
+               // qDebug() << logstr;
 
                 bool ok = dir->mkdir(fileDir);
                 if( ok )
                 {
                     logstr = "fileDir created success.";
-                    qDebug() << logstr;
+                    //qDebug() << logstr;
                 }
                 else
                 {
                     logstr = "download fail.";
-                    qDebug() << logstr;
+                    //qDebug() << logstr;
                     return;
                 }
 
@@ -208,7 +208,7 @@ void UpgradeDialog::checkForMcuUpgrade()
             ui->upStatusText->append(filename);
             if(binFile.exists())
             {
-                qDebug() << "IR_stm32f103C8.bin exsit,delete it first";
+                //qDebug() << "IR_stm32f103C8.bin exsit,delete it first";
                 ui->upStatusText->append("IR_stm32f103C8.bin exsit,delete it first");
                 QFile::remove(filename);
             }
@@ -236,7 +236,7 @@ void UpgradeDialog::checkForMcuUpgrade()
 
             if (binFile.size() != 0)
             {
-                qDebug () << filename;
+                //qDebug () << filename;
 
                 if (check_valid_upgrade_bin_version(filename, availableVersion, checksum))
                 {
@@ -246,14 +246,14 @@ void UpgradeDialog::checkForMcuUpgrade()
                     if(availableMcuVersion <= currentMcuVersion)
                     {
                         logstr ="currentMcuVersion is the latest version,no need to upgrade";
-                        qDebug() << logstr;
+                        //qDebug() << logstr;
                         ui->upStatusText->append(logstr);
                         ui->upUpgradeButton->setEnabled(false);
                     }
                     else
                     {
                         logstr = "Newer MCU version is available,Please Upgrade";
-                        qDebug() << logstr;
+                        //qDebug() << logstr;
                         ui->upStatusText->append(logstr);
                         ui->upUpgradeButton->setEnabled(true);
                     }
@@ -268,7 +268,7 @@ void UpgradeDialog::checkForMcuUpgrade()
                 else
                 {
                     logstr = "Upgrade file is crrupted!";
-                    qDebug() << logstr;
+                    //qDebug() << logstr;
                     ui->upStatusText->append(logstr);
                     ui->upUpgradeButton->setEnabled(false);
                 }
@@ -309,14 +309,14 @@ void UpgradeDialog::upChooseLocalFileButton_slot()
             if(availableMcuVersion <= currentMcuVersion)
             {
                 logstr ="currentMcuVersion is newer than local upgrade file,no need to upgrade";
-                qDebug() << logstr;
+               // qDebug() << logstr;
                 ui->upStatusText->append(logstr);
                 ui->upUpgradeButton->setEnabled(false);
             }
             else
             {
                 logstr = "local upgrade file is newer than currentMcuVersion,Please upgrade";
-                qDebug() << logstr;
+                //qDebug() << logstr;
                 ui->upStatusText->append(logstr);
                 ui->upUpgradeButton->setEnabled(true);
             }
@@ -366,7 +366,7 @@ void UpgradeDialog::upUpgradeButton_slot()
     fseek(upgrade_file, 0, SEEK_SET);
     ui->upCancelButton->setDisabled(true);
 
-    qDebug() << "total_file_length" << total_file_length;
+    //qDebug() << "total_file_length" << total_file_length;
     ui->upStatusText->append("Start Upgrade");
 
     ui->upProgressBar->setValue(0);
