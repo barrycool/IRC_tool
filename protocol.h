@@ -15,7 +15,7 @@
 
 #define ANTIROLLBACK_UPGRADE    1
 
-#define VERSION 25
+#define VERSION 30
 
 
 //#define MINIMUM_MCU_VERSION  20170907

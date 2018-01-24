@@ -21,7 +21,10 @@ class SirCommand : public QObject
         Q_OBJECT
 public:
     SirCommand(int transMode,QString portname);
-    void startWithDebugMode(QString protocalFile,QString scriptFile,int loopcnt);
+    ~SirCommand();
+    int startWithDebugMode(QString protocalFile,QString scriptFile,int loopcnt);
+    void stopLoop();
+    void clear_and_stop();
 
 private slots:
     void on_tcp_connect(QAbstractSocket::SocketState state);

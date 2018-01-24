@@ -45,6 +45,23 @@ SirCommand::SirCommand(int transMode,QString portname)
     }
 
 }
+
+SirCommand::~SirCommand()
+{
+    socket.disconnect();
+    if (socket.isOpen())
+    {
+        socket.close();
+    }
+
+    serial.disconnect();
+    if (serial.isOpen())
+    {
+        serial.close();
+    }
+
+    //delete ui;
+}
 void SirCommand::on_tcp_connect(QAbstractSocket::SocketState state)
 {
     if (state == QAbstractSocket::ConnectedState)
@@ -82,6 +99,10 @@ void SirCommand::clear_cmd_list()
 }
 void SirCommand::set_cmd_list()
 {
+    if(IR_items.size() == 0)
+    {
+        return;
+    }
     if (cmd_index >= IR_items.size())
     {
         qDebug() << "cmd list send finished";
@@ -139,7 +160,7 @@ void SirCommand::sendCmdtoMCU(uint8_t *buf,uint8_t len)
     {
         socket.write((char *)buf, len);
         /*------add for debug----------*/
-        QString log; //= "send packet:len=" +QString::number(len);
+        QString log = "send by wifi:"; //= "send packet:len=" +QString::number(len);
 
         for(uint8_t j = 0; j< len; j++)
         {
@@ -152,7 +173,7 @@ void SirCommand::sendCmdtoMCU(uint8_t *buf,uint8_t len)
     else if(serialIsReady && serial.isOpen())
     {
         /*------add for debug----------*/
-                QString log; //= "send packet:len=" +QString::number(len);
+                QString log = "send by serial :"; //= "send packet:len=" +QString::number(len);
 
                 for(uint8_t j = 0; j< len; j++)
                 {
@@ -169,6 +190,10 @@ void SirCommand::sendCmdtoMCU(uint8_t *buf,uint8_t len)
        // serial.clearError();
        // serial.clear();
         serial.write((char *)buf, len); //marked just for test
+        serial.flush();
+        //serial.close();
+        serial.waitForBytesWritten();
+        qDebug() << "send done!";
     }
     else
     {
@@ -251,9 +276,9 @@ void SirCommand::receive_data()
     for(int j = 0; j< gbuf_len; j++)
     {
         log += QString::asprintf("%02X ", gbuf[j]); //QString::number(gbuf[j],10);
-        //log += " ";
+        log += " ";
     }
-    //qDebug() << log;
+    qDebug() << log;
     //output_log(log,0);
 
     if(frame->msg == CMD_NACK)
@@ -285,6 +310,11 @@ void SirCommand::receive_data()
         else if (frame->msg_parameter[0] == PAUSE_SEND)
         {
             qDebug() << "pause send ok!";
+        }
+        else if (frame->msg_parameter[0] == REAL_TIME_SEND)
+        {
+            qDebug() << "real time send ok!";
+
         }
     }
     else if (frame->msg == SET_CMD_LIST)
@@ -333,14 +363,51 @@ void SirCommand::receive_data()
     }
     gbuf_len = 0;
 }
-void SirCommand::startWithDebugMode(QString protocalFile,QString scriptFile,int loopcnt)
+void SirCommand::stopLoop(void)
 {
-    qDebug() << "protocalFile:"<< protocalFile << " scriptFile:" << scriptFile << " loopcnt:"<< loopcnt;
-    //set loop count
-    if(loopcnt > 0)
+    uint8_t buf[BUF_LEN];
+    memset(buf,0x0,BUF_LEN);
+    struct frame_t *frame = (struct frame_t *)buf;
+    frame->data_len = sizeof(struct frame_t);
+    frame->header = FRAME_HEADER;
+    frame->seq_num = gseqnum++;
+    frame->msg = PAUSE_SEND;
+    buf[frame->data_len] = CRC8Software(buf, frame->data_len);
+    sendCmdtoMCU(buf, frame->data_len + 1);
+    //serial.waitForBytesWritten();
+}
+void SirCommand::clear_and_stop()
+{
+    //serial.waitForReadyRead();
+    stopLoop();
+
+    socket.disconnect();
+    if (socket.isOpen())
     {
-        //totalSendCnt = loopcnt;
+        socket.close();
     }
+
+    serial.disconnect();
+    if (serial.isOpen())
+    {
+        serial.close();
+    }
+}
+int SirCommand::startWithDebugMode(QString protocalFile,QString scriptFile,int loopcnt)
+{
+
+    IR_items.clear();
+    clear_cmd_list();
+
+    if(loopcnt<=0)
+    {
+         qDebug() << "Real time send butname:" << scriptFile << "  protocalFile:"<< protocalFile;
+    }
+    else
+    {
+        qDebug() <<  "Loop scriptFile:" << scriptFile << " loopcnt:"<< loopcnt  << " protocalFile:"<< protocalFile;
+    }
+
     //set IR cmd list
     QString appPath = qApp->applicationDirPath();
     QString insetIrMapTablePath = appPath.append("\\KeyMapConfig\\");
@@ -357,7 +424,7 @@ void SirCommand::startWithDebugMode(QString protocalFile,QString scriptFile,int 
     if(!file->open(QIODevice::ReadOnly | QIODevice::Text))
     {
         qDebug() << filePath + "open fail";
-        return;
+        return -1;
     }
 
     QTextStream pin(file);
@@ -377,42 +444,121 @@ void SirCommand::startWithDebugMode(QString protocalFile,QString scriptFile,int 
 
     //set test script
     //QFile *file = new QFile; //(QtCore)核心模块,需要手动释放
-    filePath = insetIrMapTablePath + scriptFile;
-    qDebug() << "set script file :" + filePath;
-    file->setFileName(filePath);
-    bool ok = file->open(QIODevice::ReadOnly);//以只读模式打开
-    if(!ok)
+    if(loopcnt >=1)
     {
-       qDebug() << filePath + "open fail!";
-       file->close();
-       delete file;
-       return;
-    }
-      QTextStream sin(file);  //文件与文本流相关联
-      QString scustomer = sin.readLine();//读取第一行;
-      QString sdevice = sin.readLine();//读取第二行;
-      qDebug() << scustomer <<" : " <<sdevice;
+        filePath = insetIrMapTablePath + scriptFile;
+        qDebug() << "set script file :" + filePath;
+        file->setFileName(filePath);
+        bool ok = file->open(QIODevice::ReadOnly);//以只读模式打开
+        if(!ok)
+        {
+           qDebug() << filePath + "open fail!";
+           file->close();
+           delete file;
+           return -1;
+        }
+          QTextStream sin(file);  //文件与文本流相关联
+          QString scustomer = sin.readLine();//读取第一行;
+          QString sdevice = sin.readLine();//读取第二行;
+          qDebug() << scustomer <<" : " <<sdevice;
 
-      //判断 protocolfile 和 scriptfile 的customer 和 device是否相同，若不同提示错误信息
-      if(scustomer != pcustomer || sdevice!=pdevice)
-      {
-          qDebug() << "protocolfile is not matched with scriptfile";
+          //判断 protocolfile 和 scriptfile 的customer 和 device是否相同，若不同提示错误信息
+          if(scustomer != pcustomer || sdevice!=pdevice)
+          {
+              qDebug() << "protocolfile is not matched with scriptfile";
+              file->close();
+              delete file;
+              return -1;
+          }
+
+          while (!sin.atEnd()) {
+              QString line = sin.readLine();
+              if(line.contains("---"))
+              {
+                  QStringList list1 = line.split("---");
+                  add_to_IR_Items(list1.at(0),list1.at(1).toInt());
+              }
+          }
           file->close();
           delete file;
-          return;
-      }
+          //download to mcu
+          DownloadIR_items();
+          return 0;
+    }
+    else
+    {
+        uint8_t buf[BUF_LEN];
+        memset(buf,0x0,BUF_LEN);
 
-      while (!sin.atEnd()) {
-          QString line = sin.readLine();
-          if(line.contains("---"))
-          {
-              QStringList list1 = line.split("---");
-              add_to_IR_Items(list1.at(0),list1.at(1).toInt());
-          }
-      }
-      file->close();
-      delete file;
+        struct frame_t *frame = (struct frame_t *)buf;
+        IR_item_t ir_item;
 
-    //download to mcu
-    DownloadIR_items();
+        frame->data_len = sizeof(struct frame_t);
+        frame->header = FRAME_HEADER;
+        frame->seq_num = gseqnum++;
+        frame->msg = REAL_TIME_SEND;
+
+
+        ir_item.is_valid = 0;
+        ir_item.delay_time = 100;
+
+        QString button = scriptFile;
+        QByteArray ba = button.toLatin1();
+        char *tmpBuf = ba.data();
+
+        for(int i=0;i<IR_maps.size();i++)
+        {
+            if(button == IR_maps.at(i).name)
+            {
+                ir_item.is_valid = 1;
+                ir_item.IR_type = IR_maps.at(i).IR_type;
+
+                if(String2IRLearningItem(IR_maps.at(i).keyValue,&ir_item) != true)
+                {
+                    //qDebug() << "transfer fail";
+                }
+
+                switch(ir_item.IR_type)
+                {
+                    case IR_TYPE_SIRCS:
+                        memcpy(ir_item.IR_CMD.IR_SIRCS.name,tmpBuf,MAX_NAME_LEN);
+                        break;
+                    case IR_TYPE_NEC:
+                        memcpy(ir_item.IR_CMD.IR_NEC.name,tmpBuf,MAX_NAME_LEN);
+                        break;
+                    case IR_TYPE_RC6:
+                        memcpy(ir_item.IR_CMD.IR_RC6.name,tmpBuf,MAX_NAME_LEN);
+                        break;
+                    case IR_TYPE_RC5:
+                        memcpy(ir_item.IR_CMD.IR_RC5.name,tmpBuf,MAX_NAME_LEN);
+                        break;
+                    /*case IR_TYPE_JVC:
+                        memcpy(ir_item.IR_CMD.IR_JVC.name,tmpBuf,MAX_NAME_LEN);
+                        break;*/
+                    case IR_TYPE_LEARNING:
+                        memcpy(ir_item.IR_CMD.IR_learning.name,tmpBuf,MAX_NAME_LEN);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            }
+        }
+        if(ir_item.is_valid != 1)
+        {
+             qDebug() << "Cannot find " << button << "in " << protocalFile;
+             return -1;
+        }
+
+        memcpy(frame->msg_parameter,&ir_item,sizeof(IR_item_t));
+        frame->data_len += sizeof(IR_item_t);
+
+        buf[frame->data_len] = CRC8Software(buf, frame->data_len);
+
+        sendCmdtoMCU(buf, frame->data_len + 1);
+        //serial.waitForBytesWritten();
+        //QThread::usleep(5000); // delay 5s
+        //return 0;
+    }
+
 }

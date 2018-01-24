@@ -184,7 +184,7 @@ MainWindow::~MainWindow()
     serial.disconnect();
     if (serial.isOpen())
     {
-        close();
+        serial.close();
     }
 
     delete ui;
@@ -2660,7 +2660,7 @@ void MainWindow::leStartRecordButton_slot()
         sendCmd2MCU(buf,frame->data_len + 1);
 /*
        //QMessageBox::information(this,"Guide","Please press the button on your RemoteController");
-       QMessageBox *messageBox=new QMessageBox(QMessageBox::Information,"Guide","Please press the button on your RemoteController",QMessageBox::Close,this);
+       QMessageBox *messageBox=new QMessageBox(QMessageBox::Information,"Guide","Please press the button on your RemoteController",QMessageBox::ee,this);
        messageBox->show();
 */
         //open learning wave for debug
