@@ -108,8 +108,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //for Aging Test SubWindow
     loadInsetIrMapTable();
-    connect(ui->atCustomerCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_device);
-    connect(ui->atDeviceCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_command_list);
+    //connect(ui->atCustomerCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_device);
+    //connect(ui->atDeviceCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_command_list);
 /*
     QWidget *wContainer = new QWidget(ui->atScriptlistWidget);
     QHBoxLayout *hLayout = new QHBoxLayout(wContainer);
@@ -1305,13 +1305,18 @@ void MainWindow::leSetIRDevice(int index)
     {
         ui->leDeviceText->addItem(device);
     }
-
+    int oldIdx = settings->value("DeviceIdx",0).toInt();
+    if(oldIdx >= ui->leCustomerText->count())
+    {
+        oldIdx = 0;
+    }
+    ui->leDeviceText->setCurrentIndex(oldIdx);
 }
 void MainWindow::leLoadKeyMap()
 {
-    //qDebug() << "set_IR_command_list";
+    //qDebug() << "leLoadKeyMap";
     output_log("leLoadKeyMap",0);
-    ui->atCustomizeKeyListWidget->clear();
+
     QString fileName=ui->leCustomerText->currentText()+"%"+ui->leDeviceText->currentText()+".ini";
     QString appPath = qApp->applicationDirPath();
     QString insetIrMapTablePath = appPath.append("\\KeyMapConfig\\");
@@ -1387,8 +1392,8 @@ void MainWindow::leLoadKeyMap()
 }
 void MainWindow::on_actionLearningKey_triggered()
 {
-    disconnect(ui->leCustomerText, SIGNAL(currentIndexChanged(int)), this, SLOT(leSetIRDevice(int)));
-    disconnect(ui->leDeviceText, SIGNAL(currentIndexChanged()), this, SLOT(leLoadKeyMap()));
+    //disconnect(ui->leCustomerText, SIGNAL(currentIndexChanged(int)), this, SLOT(leSetIRDevice(int)));
+    //disconnect(ui->leDeviceText, SIGNAL(currentIndexChanged()), this, SLOT(leLoadKeyMap()));
     ui->leCustomerText->clear();
     foreach(const QString procotol, IR_protocols)
     {
@@ -1400,6 +1405,10 @@ void MainWindow::on_actionLearningKey_triggered()
 
     //QMessageBox::information(this,"Guide","Please choose a button from a panel first,then press the button on remote control,wait until key value shows on the edidtbox");
     int oldIdx = settings->value("CustomerIdx",0).toInt();
+    if(oldIdx >= ui->leCustomerText->count())
+    {
+        oldIdx = 0;
+    }
     ui->leCustomerText->setCurrentIndex(oldIdx);
     leSetIRDevice(oldIdx);
 
@@ -1428,6 +1437,8 @@ void MainWindow::returnPortSetting()
 
 void MainWindow::on_actionAgingTest_triggered()
 {
+    disconnect(ui->leCustomerText, SIGNAL(currentIndexChanged(int)), this, SLOT(leSetIRDevice(int)));
+    disconnect(ui->leDeviceText, SIGNAL(currentIndexChanged()), this, SLOT(leLoadKeyMap()));
     //isAutotestState = 1;
     //isLearingkeyState = 0;
     //if(ui->AgingTestSubWindow-isHidden() && ui->LearningKeySubWindow->isMaximized())
@@ -1655,7 +1666,7 @@ void MainWindow::loadInsetIrMapTable()
     if(!insetIrMapTableDir.exists())
     {
         logstr = "KeyMapConfig doesn't exist";
-        //qDebug() << logstr;
+        qDebug() << logstr;
         output_log(logstr,1);
 
         //QMessageBox::information(this,"Error","There's no inset IrMapTable Dir!");
@@ -1663,7 +1674,7 @@ void MainWindow::loadInsetIrMapTable()
         if( ok )
         {
             logstr = "KeyMapConfig created success.";
-            //qDebug() << logstr;
+            qDebug() << logstr;
             output_log(logstr,0);
         }
 
@@ -1674,7 +1685,7 @@ void MainWindow::loadInsetIrMapTable()
     if(fileNames.size()==0)
     {
         logstr = "InsetKeyMap files don't exist";
-        //qDebug() << logstr;
+        qDebug() << logstr;
         output_log(logstr,1);
         QMessageBox::information(this,"Error","There's no inset IrMapTable file!");
         return;
@@ -1685,7 +1696,7 @@ void MainWindow::loadInsetIrMapTable()
         if(fileNames.at(index)=="." || fileNames.at(index)=="..")
             continue;
 
-        //qDebug() << fileNames.at(index);
+        qDebug() << fileNames.at(index);
         QString filename = fileNames.at(index);
         QStringList customDevice = filename.split(QRegExp("[%.]"), QString::SkipEmptyParts);
         /*QStringList fileNamePure = filename.split(".");
@@ -1697,10 +1708,10 @@ void MainWindow::loadInsetIrMapTable()
 
         logstr = custom + ":" + device;
         output_log(logstr,0);
-        logstr ="IR_protocols.count()";
+        logstr ="IR_protocols.count(): ";
         logstr += QString("%1 ").arg(IR_protocols.count());
         output_log(logstr,0);
-        logstr ="irProtocolsCount";
+        logstr ="irProtocolsCount: ";
         logstr += QString("%1 ").arg(irProtocolsCount);
         output_log(logstr,0);
 
@@ -1756,31 +1767,39 @@ void MainWindow::loadInsetIrMapTable()
             }
         }
     }
-
+    qDebug() << "111";
     //add all protocols to atCustomerCombox
     set_IR_protocol();
 
-    int oldCustomerIdx = settings->value("CustomerIdx",0).toInt();
-    set_IR_device(oldCustomerIdx);
+    //int oldCustomerIdx = settings->value("CustomerIdx",0).toInt();
+    //set_IR_device(oldCustomerIdx);
 }
 
 void MainWindow::set_IR_protocol()
 {
+    qDebug() << "set_IR_protocol";
     disconnect(ui->atCustomerCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_device);
     disconnect(ui->atDeviceCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_command_list);
     ui->atDeviceCombox->clear();
     ui->atCustomerCombox->clear();
     foreach(const QString procotol, IR_protocols)
     {
-        //qDebug() << procotol;
+        qDebug() << procotol;
         ui->atCustomerCombox->addItem(procotol);
     }
 
-    connect(ui->atCustomerCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_device);
-    connect(ui->atDeviceCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_command_list);
+
 
     int oldIdx = settings->value("CustomerIdx",0).toInt();
+    if(oldIdx >= ui->atCustomerCombox->count())
+    {
+        oldIdx = 0;
+    }
+    qDebug() << "oldIdx = " << oldIdx;;
     ui->atCustomerCombox->setCurrentIndex(oldIdx);
+    set_IR_device(oldIdx);
+    connect(ui->atCustomerCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_device);
+    connect(ui->atDeviceCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_command_list);
 }
 
 void MainWindow::set_IR_device(int index)
@@ -1788,8 +1807,8 @@ void MainWindow::set_IR_device(int index)
 
     disconnect(ui->atDeviceCombox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &set_IR_command_list);
 
-    //qDebug() << "set_IR_device";
-     output_log("set_IR_device",0);
+    qDebug() << "set_IR_device";
+    output_log("set_IR_device",0);
     ui->atDeviceCombox->clear();
     foreach(const QString device, IR_SIRCS_devices[index])
     {
@@ -1797,6 +1816,10 @@ void MainWindow::set_IR_device(int index)
     }
 
     int oldIdx = settings->value("DeviceIdx",0).toInt();
+    if(oldIdx >= ui->atDeviceCombox->count())
+    {
+        oldIdx = 0;
+    }
     ui->atDeviceCombox->setCurrentIndex(oldIdx);
 
     set_IR_command_list();
@@ -1805,7 +1828,7 @@ void MainWindow::set_IR_device(int index)
 int index = 0;
 void MainWindow::set_IR_command_list()
 {
-    //qDebug() << "set_IR_command_list";
+    qDebug() << "set_IR_command_list";
     output_log("set_IR_command_list",0);
     ui->atCustomizeKeyListWidget->clear();
     QString fileName=ui->atCustomerCombox->currentText()+"%"+ui->atDeviceCombox->currentText()+".ini";

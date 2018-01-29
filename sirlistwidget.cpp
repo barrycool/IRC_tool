@@ -2,7 +2,7 @@
 
 SIRListWidget::SIRListWidget(QWidget *parent):QListWidget(parent)
 {
-    qDebug() << "SIRListWidget create";
+    //qDebug() << "SIRListWidget create";
     setAcceptDrops(true);
 }
 SIRListWidget::~SIRListWidget()
@@ -85,30 +85,30 @@ void SIRListWidget::dropEvent( QDropEvent * event )
         if(data->hasText())
         {
             QString texts = data->text() ;
-            qDebug() << "dropEvent,other,mimeData()->text():"<< texts;
+            //qDebug() << "dropEvent,other,mimeData()->text():"<< texts;
             //addItem(texts);
         }
         else if(data->hasHtml())
         {
-            qDebug() << "dropEvent,other,mimeData()->html():"<< data->html();
+            //qDebug() << "dropEvent,other,mimeData()->html():"<< data->html();
         }
         else if(data->hasUrls())
         {
             //event->acceptProposedAction();
-            qDebug() << "dropEvent,other,mimeData()->urls:";
+            //qDebug() << "dropEvent,other,mimeData()->urls:";
         }
         else if(data->hasImage())
         {
-             qDebug() << "dropEvent,other,mimeData()->hasImage:";
+             //qDebug() << "dropEvent,other,mimeData()->hasImage:";
         }
         else if(data->hasColor())
         {
-             qDebug() << "dropEvent,other,mimeData()->hasColor:";
+             //qDebug() << "dropEvent,other,mimeData()->hasColor:";
         }
         else
         {
            QListWidgetItem* srcitem = source->currentItem();
-           qDebug() << "dropEvent,other,mimeData()->qListWidget:" << srcitem->text();
+           //qDebug() << "dropEvent,other,mimeData()->qListWidget:" << srcitem->text();
            endPos = event->pos();
            QListWidgetItem *dstitem = itemAt(endPos);
            int row = this->row(dstitem);
@@ -124,7 +124,7 @@ void SIRListWidget::dropEvent( QDropEvent * event )
 
 void SIRListWidget::mousePressEvent( QMouseEvent *event )
 {
-    qDebug() << "mousePressEvent,event->button():"<<event->button();
+    //qDebug() << "mousePressEvent,event->button():"<<event->button();
     if (event->button() == Qt::LeftButton)
         startPos = event->pos();
     QListWidget::mousePressEvent(event);
@@ -132,6 +132,6 @@ void SIRListWidget::mousePressEvent( QMouseEvent *event )
 
 void SIRListWidget::mouseMoveEvent(QMouseEvent *event)
 {
-     qDebug() << "mouseMoveEvent";
+     //qDebug() << "mouseMoveEvent";
      QListWidget::mouseMoveEvent(event);
 }
