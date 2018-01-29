@@ -1722,10 +1722,10 @@ image: url(:/new/icon/resource-icon/sign-right-icon.png);</string>
       <widget class="QPushButton" name="leAddToListButton">
        <property name="geometry">
         <rect>
-         <x>290</x>
-         <y>170</y>
-         <width>91</width>
-         <height>23</height>
+         <x>310</x>
+         <y>162</y>
+         <width>81</width>
+         <height>31</height>
         </rect>
        </property>
        <property name="text">
@@ -1735,9 +1735,9 @@ image: url(:/new/icon/resource-icon/sign-right-icon.png);</string>
       <widget class="QPushButton" name="leRealTimeTestBut">
        <property name="geometry">
         <rect>
-         <x>290</x>
+         <x>310</x>
          <y>100</y>
-         <width>91</width>
+         <width>81</width>
          <height>31</height>
         </rect>
        </property>
@@ -1748,35 +1748,35 @@ image: url(:/new/icon/resource-icon/sign-right-icon.png);</string>
       <widget class="QPushButton" name="leRemoveFromListBut">
        <property name="geometry">
         <rect>
-         <x>290</x>
+         <x>310</x>
          <y>220</y>
-         <width>91</width>
-         <height>23</height>
+         <width>81</width>
+         <height>31</height>
         </rect>
        </property>
        <property name="text">
         <string>Remove &gt;&gt;</string>
        </property>
       </widget>
-      <widget class="QPushButton" name="leSaveKeymapBut">
+      <widget class="QPushButton" name="leSaveAppendBut">
        <property name="geometry">
         <rect>
-         <x>290</x>
-         <y>340</y>
-         <width>91</width>
-         <height>23</height>
+         <x>310</x>
+         <y>292</y>
+         <width>81</width>
+         <height>31</height>
         </rect>
        </property>
        <property name="text">
-        <string>SaveKeyMap</string>
+        <string>SaveAppend</string>
        </property>
       </widget>
       <widget class="QPushButton" name="leStartRecordBut">
        <property name="geometry">
         <rect>
-         <x>290</x>
+         <x>310</x>
          <y>50</y>
-         <width>91</width>
+         <width>81</width>
          <height>23</height>
         </rect>
        </property>
@@ -1806,14 +1806,18 @@ image: url(:/new/icon/resource-icon/sign-right-icon.png);</string>
       <widget class="QPushButton" name="leClearButton">
        <property name="geometry">
         <rect>
-         <x>290</x>
-         <y>300</y>
-         <width>91</width>
+         <x>270</x>
+         <y>340</y>
+         <width>23</width>
          <height>23</height>
         </rect>
        </property>
+       <property name="styleSheet">
+        <string notr="true">background-image: url(:/new/icon/resource-icon/316270.png);
+border-image: url(:/new/icon/resource-icon/316270.png);</string>
+       </property>
        <property name="text">
-        <string>Clear</string>
+        <string/>
        </property>
       </widget>
       <widget class="QLabel" name="leKaymaplistLable">
@@ -1832,7 +1836,7 @@ image: url(:/new/icon/resource-icon/sign-right-icon.png);</string>
       <widget class="QCheckBox" name="leDebugModeCheckBox">
        <property name="geometry">
         <rect>
-         <x>290</x>
+         <x>310</x>
          <y>30</y>
          <width>81</width>
          <height>16</height>
@@ -1866,6 +1870,19 @@ image: url(:/new/icon/resource-icon/sign-right-icon.png);</string>
        </property>
        <property name="editable">
         <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="leSaveRewriteBut">
+       <property name="geometry">
+        <rect>
+         <x>310</x>
+         <y>350</y>
+         <width>81</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>SaveReWrite</string>
        </property>
       </widget>
      </widget>

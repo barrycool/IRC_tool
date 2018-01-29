@@ -940,23 +940,6 @@ void MainWindow::serial_receive_data()
     else if (frame->msg == REPORT_SENDING_CMD)
     {
         //totalSendCnt--;
-        if((loopcnt == totalSendCnt) && totalSendCnt!=0) // totalSendCnt=0 means loop forever
-        {
-            //ui->atStartButton->setText("Pause");
-            //atStartButton_slot();
-            output_log("counter is up,pause the loop test.",1);
-            uint8_t buf1[BUF_LEN];
-            memset(buf1,0x0,BUF_LEN);
-            struct frame_t *frame = (struct frame_t *)buf1;
-            frame->data_len = sizeof(struct frame_t);
-            frame->header = FRAME_HEADER;
-            frame->seq_num = seqnum++;
-            frame->msg = PAUSE_SEND;
-            buf1[frame->data_len] = CRC8Software(buf1, frame->data_len);
-            sendCmd2MCU(buf1, frame->data_len + 1);
-            buf_len = 0;
-            return;
-        }
         currentSendCnt++;
         int ncmd = IR_items.size();
         if(ncmd ==0)
@@ -981,7 +964,23 @@ void MainWindow::serial_receive_data()
         {
             loopcnt++;
         }
-
+        if((loopcnt == totalSendCnt) && totalSendCnt!=0) // totalSendCnt=0 means loop forever
+        {
+            //ui->atStartButton->setText("Pause");
+            //atStartButton_slot();
+            output_log("counter is up,pause the loop test.",1);
+            uint8_t buf1[BUF_LEN];
+            memset(buf1,0x0,BUF_LEN);
+            struct frame_t *frame = (struct frame_t *)buf1;
+            frame->data_len = sizeof(struct frame_t);
+            frame->header = FRAME_HEADER;
+            frame->seq_num = seqnum++;
+            frame->msg = PAUSE_SEND;
+            buf1[frame->data_len] = CRC8Software(buf1, frame->data_len);
+            sendCmd2MCU(buf1, frame->data_len + 1);
+            buf_len = 0;
+            return;
+        }
     }
     else if (frame->msg == RECV_CMD_FROM_UART)
     {
@@ -1308,9 +1307,88 @@ void MainWindow::leSetIRDevice(int index)
     }
 
 }
+void MainWindow::leLoadKeyMap()
+{
+    //qDebug() << "set_IR_command_list";
+    output_log("leLoadKeyMap",0);
+    ui->atCustomizeKeyListWidget->clear();
+    QString fileName=ui->leCustomerText->currentText()+"%"+ui->leDeviceText->currentText()+".ini";
+    QString appPath = qApp->applicationDirPath();
+    QString insetIrMapTablePath = appPath.append("\\KeyMapConfig\\");
+    QString filePath = insetIrMapTablePath+fileName;
+    //qDebug() << filePath;
+
+    QFile *file = new QFile;
+    file->setFileName(filePath);
+    if(!file->exists())
+    {
+        logstr = filePath.append(" not exists");
+        output_log(logstr,1);
+        return;
+    }
+    if(!file->open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        //qDebug() << "filePath open fail";
+        logstr = filePath.append(" open fail");
+        output_log(logstr,1);
+        return;
+    }
+
+    QTextStream in(file);
+    QString line = in.readLine();//read custom name
+    line = in.readLine();//read device name
+
+    ui->leKeymaplistWidget->clear();
+
+    //index = 0;
+    while(!in.atEnd()){
+        line = in.readLine();
+        if(line.contains(','))
+        {
+            output_log(line,0);
+            //setToKeyListWidget(line);
+            //saveToIrMaps(line);
+            qDebug() << line;
+
+            QStringList list = line.split(','); //"0,Power,0x1A,0x02,0x1C,0x15"
+            //IR_item_t ir_item ;
+            //ir_item.IR_type = list.at(0).toInt();
+            //char tmpBuf[MAX_NAME_LEN] = list.at(1);
+            //QByteArray ba = list.at(1).toLatin1();
+            //char *tmpBuf = ba.data();
+
+            QString str0 = list.at(0);
+            QString str1 = list.at(1);
+            QString str2 = str0;
+            QString tmpstr;
+           // qDebug() << str0 << "," << str1 << "," << str2;
+
+            for(int i = 0; i< list.size()-2;i++)
+            {
+                tmpstr = list.at(i+2);
+                tmpstr.remove("0x");
+                str2.append("-").append(tmpstr);
+                tmpstr.clear();
+            }
+            QString str = str0.append(":").append(str1).append(":").append(str2);
+            qDebug() << "combine:" << str;
+
+            QListWidgetItem *item = new QListWidgetItem(str,ui->leKeymaplistWidget);
+            ui->leKeymaplistWidget->addItem(item);
+            ui->leKeymaplistWidget->setCurrentItem(item); //make KeyMapList always focus on the last item when a new item is added
+
+        }
+    }
+
+    file->close();
+    delete file;
+    file = NULL;
+
+}
 void MainWindow::on_actionLearningKey_triggered()
 {
     disconnect(ui->leCustomerText, SIGNAL(currentIndexChanged(int)), this, SLOT(leSetIRDevice(int)));
+    disconnect(ui->leDeviceText, SIGNAL(currentIndexChanged()), this, SLOT(leLoadKeyMap()));
     ui->leCustomerText->clear();
     foreach(const QString procotol, IR_protocols)
     {
@@ -1318,10 +1396,12 @@ void MainWindow::on_actionLearningKey_triggered()
         ui->leCustomerText->addItem(procotol);
     }
     connect(ui->leCustomerText, SIGNAL(currentIndexChanged(int)), this, SLOT(leSetIRDevice(int)));
+    connect(ui->leDeviceText, SIGNAL(currentIndexChanged(int)), this, SLOT(leLoadKeyMap()));
 
     //QMessageBox::information(this,"Guide","Please choose a button from a panel first,then press the button on remote control,wait until key value shows on the edidtbox");
-
-    leSetIRDevice(0);
+    int oldIdx = settings->value("CustomerIdx",0).toInt();
+    ui->leCustomerText->setCurrentIndex(oldIdx);
+    leSetIRDevice(oldIdx);
 
     ui->learningKeyGroup->setDisabled(false);
     ui->learningKeyGroup->show();
@@ -1424,7 +1504,8 @@ void MainWindow::ir_button_Slot_connect()
     QObject::connect(ui->leStartRecordBut,SIGNAL(clicked()),this,SLOT(leStartRecordButton_slot()));
     QObject::connect(ui->leAddToListButton,SIGNAL(clicked()),this,SLOT(leAddToListButton_slot()));
     QObject::connect(ui->leRemoveFromListBut,SIGNAL(clicked()),this,SLOT(leRemoveFromListButton_slot()));
-    QObject::connect(ui->leSaveKeymapBut,SIGNAL(clicked()),this,SLOT(leSaveKeymapButton_slot()));
+    QObject::connect(ui->leSaveAppendBut,SIGNAL(clicked()),this,SLOT(leSaveKeymapButton_slot()));
+    QObject::connect(ui->leSaveRewriteBut,SIGNAL(clicked()),this,SLOT(leSaveReWriteButton_slot()));
     QObject::connect(ui->leClearButton,SIGNAL(clicked()),this,SLOT(leClearButton_slot()));
     QObject::connect(ui->leRealTimeTestBut,SIGNAL(clicked()),this,SLOT(leRealTimeTestButton_slot()));
 
@@ -2841,8 +2922,97 @@ void MainWindow::leSaveKeymapButton_slot()
 
     loadInsetIrMapTable();
 
-    QMessageBox::information(this,"Save Success","Save Key map to file:" + filename);
-    leClearButton_slot();
+    QMessageBox::information(this,"Save Success","Save Key map append to file:" + filename);
+    //leClearButton_slot();
+
+}
+void MainWindow::leSaveReWriteButton_slot()
+{
+    if(ui->leCustomerText->currentText().isEmpty())
+    {
+        QMessageBox::information(this,"warning","Cusomer cannot be empty,Please input a Customer name");
+        ui->leCustomerText->setFocus();
+        return;
+    }
+    else if(ui->leDeviceText->currentText().isEmpty())
+    {
+        QMessageBox::information(this,"warning","Device cannot be empty,Please input a Device name");
+        ui->leDeviceText->setFocus();
+        return;
+    }
+
+    if(ui->leKeymaplistWidget->count() == 0)
+    {
+       QMessageBox::information(this,"warning","Nothing to save,KeymapList is empty");
+       ui->leKeymaplistWidget->setFocus();
+       return;
+    }
+
+    QDir *dir = new QDir(keyMapDirPath);
+    dir->setCurrent(keyMapDirPath);
+    QString filename = ui->leCustomerText->currentText().append("%").append(ui->leDeviceText->currentText())./*append("_byLearning").*/append(".ini");
+    QFile *keymapfile = new QFile;
+    //QFile *tempFile = new QFile;
+    keymapfile->setFileName(filename);
+    QTextStream out(keymapfile);
+    /*
+    if(keymapfile->exists())
+    {
+        //文件已存在,追加到文件末尾
+       // qDebug() << "文件已存在\n";
+        if(!keymapfile->open(QIODevice::WriteOnly | QIODevice::Text|QIODevice::Append))
+        {
+            //qDebug() << "打开文件失败\n";
+            QMessageBox::critical(this,"Save Fail","Save Key map to file ERROR,Can't open file");
+            return ;
+        }
+
+    }
+    else
+    */
+    {
+        //文件不存在,创建新文件
+        //qDebug() << "文件不存在,新建文件 " << filename << "\n";
+
+        if(!keymapfile->open(QIODevice::WriteOnly | QIODevice::Text))
+        {
+            //qDebug() << "打开文件失败\n";
+            QMessageBox::critical(this,"Save Fail","Save Key map to file ERROR,Can't open file");
+            return ;
+        }
+        //QTextStream out(keymapfile);
+        out << ui->leCustomerText->currentText() << "\n";
+        out << ui->leDeviceText->currentText() << "\n";
+    }
+   // qDebug() << "save:leKeymaplistWidget total count is " << ui->leKeymaplistWidget->count();
+    for(int i = 0;i < ui->leKeymaplistWidget->count();i++)
+    {
+        QListWidgetItem *item = ui->leKeymaplistWidget->item(i);
+        //qDebug() << " item.text in row " << i << "is" << item->text();
+        QString src = item->text();
+        QStringList list1 = src.split(":");
+        QString type =list1.at(0); // ir_type
+        QString name =list1.at(1); // ir_name
+        QString key = list1.at(2); // ir_key
+        QString dst = type;
+        dst.append(",").append(name);
+        QStringList list2 = key.split("-");
+        for(int i=1;i < list2.size();i++)
+        {
+            QString tmp = list2.at(i);
+            tmp.insert(0,"0x");
+            dst.append(",").append(tmp);
+        }
+        //qDebug() << " transfer to " << dst;
+       out << dst << "\n";
+    }
+    keymapfile->close();
+    delete keymapfile;  //需手动删除,以免内存泄漏
+
+    loadInsetIrMapTable();
+
+    QMessageBox::information(this,"Save Success","Save Key map ReWrite to file:" + filename);
+    //leClearButton_slot();
 
 }
 /*---------------------------------------------------*/

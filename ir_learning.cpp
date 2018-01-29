@@ -858,14 +858,14 @@ uint8_t IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
     memset(&IR_learning_item, 0, sizeof(IR_item_t));
     IR_learning_item.is_valid = 1;
 
-    /*if(abs(waveform[0] -  SIRCS_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  SIRCS_START_BIT_LOW) < LEARNING_PRECISION &&
+    if(abs(waveform[0] -  SIRCS_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  SIRCS_START_BIT_LOW) < LEARNING_PRECISION &&
           (wave_form_cnt == 25 || wave_form_cnt == 31 || wave_form_cnt == 41))
     {
         //qDebug() << "IR_TYPE_SIRCS";
         IR_learning_item.IR_type = IR_TYPE_SIRCS;
         if (IR_encode_SIRCS(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_SIRCS))
             return 1;
-    }*/
+    }
     if (abs(waveform[0] -  RC6_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] -  RC6_START_BIT_LOW) < LEARNING_PRECISION)
     {
         //qDebug() << "IR_TYPE_RC6";
@@ -935,6 +935,7 @@ QString hexByte2String(uint8_t value)
     {
         tmp = tmp.insert(0, "0");
     }
+    tmp.toUpper();
     return tmp;
 }
 

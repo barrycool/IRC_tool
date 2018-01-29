@@ -109,11 +109,13 @@ private slots:
     void leAddToListButton_slot();
     void leRemoveFromListButton_slot();
     void leSaveKeymapButton_slot();
+    void leSaveReWriteButton_slot();
     void leClearButton_slot();
     void leRealTimeTestButton_slot();
     void returnfromLearningWave();
     void analysisFinshed(QString);
     void leSetIRDevice(int index);
+    void leLoadKeyMap();
     //void leReadyReadSlot();
     /*---------lianlian add for AgingTest---------------*/
     void atCustomizeKeyListWidgetItemClicked_slot(QListWidgetItem* );
