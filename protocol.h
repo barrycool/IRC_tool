@@ -64,8 +64,8 @@ struct IR_RC6_t {
 };
 
 struct IR_RC5_t {
-  uint8_t IR_address :5;
-  uint8_t IR_command : 6;
+  uint8_t IR_address;
+  uint8_t IR_command;
   char name[16];
 };
 

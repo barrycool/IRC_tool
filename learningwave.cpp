@@ -52,7 +52,7 @@ void LearningWave::showWave()
 {
     //qDebug() << "analyze the date transfer to wave...";
     QString log = this->button;
-    log.append(":").append(QString::number(keylen));
+    log.append(":L=").append(QString::number(keylen)).append(":");
     for(uint8_t i = 0; i< keylen + 1; i++)
     {
         log += QString(" %1").arg(ir_keyvalue[i]);
