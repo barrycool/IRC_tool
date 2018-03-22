@@ -873,8 +873,8 @@ uint8_t IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
         if (IR_encode_RC6(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_RC6))
             return 1;
     }
-    if ((abs(waveform[0] -  RC5_START_BIT_HIGH) < LEARNING_PRECISION || abs(waveform[0] - 2 * RC5_START_BIT_HIGH) < LEARNING_PRECISION) &&
-             abs(waveform[1] -  RC5_START_BIT_LOW) < LEARNING_PRECISION)
+    if ((abs(waveform[0] -  RC5_START_BIT_HIGH) < LEARNING_PRECISION && abs(waveform[1] - RC5_START_BIT_LOW) < LEARNING_PRECISION) ||
+             (abs(waveform[0] -  2 * RC5_START_BIT_HIGH) < LEARNING_PRECISION))
     {
         //qDebug() << "IR_TYPE_RC5";
         IR_learning_item.IR_type = IR_TYPE_RC5;
