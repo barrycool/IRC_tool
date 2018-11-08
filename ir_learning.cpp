@@ -910,6 +910,10 @@ uint8_t IR_encode(uint8_t waveform[], uint8_t wave_form_cnt)
             }
         }
     }
+    IR_learning_item.IR_type = IR_TYPE_LEARNING;
+    //IR_learning_item.IR_CMD.IR_learning.repeate_cnt = 3;
+    if (IR_encode_learning(waveform, wave_form_cnt, IR_learning_item.IR_CMD.IR_learning))
+        return 1;
 
     /*IR_learning_item.IR_type = IR_TYPE_LEARNING_160;
     IR_learning_item.IR_CMD.IR_learning_160.repeate_cnt = 3;
